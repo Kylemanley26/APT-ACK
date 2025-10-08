@@ -1,0 +1,7 @@
+sqlalchemy
+requests
+feedparser
+beautifulsoup4
+python-dateutil
+pyyaml
+flask

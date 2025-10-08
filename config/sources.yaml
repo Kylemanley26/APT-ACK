@@ -1,0 +1,11 @@
+rss_feeds:
+  - name: "Krebs on Security"
+    url: "https://krebsonsecurity.com/feed/"
+  - name: "BleepingComputer"
+    url: "https://www.bleepingcomputer.com/feed/"
+  - name: "The Hacker News"
+    url: "https://feeds.feedburner.com/TheHackersNews"
+  - name: "Schneier on Security"
+    url: "https://www.schneier.com/feed/atom/"
+  - name: "Dark Reading"
+    url: "https://www.darkreading.com/rss.xml"
