@@ -197,31 +197,31 @@ class ThreatTagger:
         session = db.get_session()
         
         try:
-            # Find items with default relevance score
+            # Find items with default relevance score and extract IDs and titles
             untagged = session.query(FeedItem).filter(FeedItem.relevance_score == 0.0).all()
             
-            tagged_count = 0
-            for feed_item in untagged:
-                # Extract data before calling tag_feed_item
-                feed_id = feed_item.id
-                title = feed_item.title[:60]
-                
-                if self.tag_feed_item(feed_id):
-                    tagged_count += 1
-                    
-                    # Re-query to get updated values
-                    session_check = db.get_session()
-                    try:
-                        updated_item = session_check.query(FeedItem).filter_by(id=feed_id).first()
-                        if updated_item:
-                            severity = updated_item.severity.value
-                            score = updated_item.relevance_score
-                            tags = len(updated_item.tags)
-                            print(f"Tagged '{title}...' - {severity.upper()} (score: {score:.2f}, tags: {tags})")
-                    finally:
-                        session_check.close()
-            
-            return tagged_count
+            # Extract data before processing
+            items_to_process = [(item.id, item.title[:60]) for item in untagged]
             
         finally:
             session.close()
+        
+        # Now process with fresh sessions
+        tagged_count = 0
+        for feed_id, title in items_to_process:
+            if self.tag_feed_item(feed_id):
+                tagged_count += 1
+                
+                # Re-query to get updated values
+                session_check = db.get_session()
+                try:
+                    updated_item = session_check.query(FeedItem).filter_by(id=feed_id).first()
+                    if updated_item:
+                        severity = updated_item.severity.value
+                        score = updated_item.relevance_score
+                        tags = len(updated_item.tags)
+                        print(f"Tagged '{title}...' - {severity.upper()} (score: {score:.2f}, tags: {tags})")
+                finally:
+                    session_check.close()
+        
+        return tagged_count

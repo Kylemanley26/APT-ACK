@@ -8,3 +8,4 @@ config/secrets.yaml
 *.log
 .DS_Store
 scripts/*.db
+exports/
