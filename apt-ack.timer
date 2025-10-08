@@ -1,0 +1,11 @@
+[Unit]
+Description=APT-ACK Threat Intelligence Collection Timer
+Requires=apt-ack.service
+
+[Timer]
+# Run every 6 hours
+OnCalendar=*-*-* 00,06,12,18:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

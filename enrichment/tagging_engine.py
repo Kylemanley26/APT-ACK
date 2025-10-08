@@ -165,6 +165,12 @@ class ThreatTagger:
             # Extract tags
             tag_dict = self.extract_tags(text)
             
+            # Special handling for CISA KEV items
+            if feed_item.source_name == "CISA KEV":
+                # Check for ransomware in content
+                if 'Known Ransomware Use: Known' in text:
+                    tag_dict['ransomware-campaign'] = 'attack_type'
+            
             # Get or create tags
             for tag_name, category in tag_dict.items():
                 tag = session.query(Tag).filter_by(name=tag_name).first()
@@ -175,12 +181,18 @@ class ThreatTagger:
                 if tag not in feed_item.tags:
                     feed_item.tags.append(tag)
             
-            # Calculate severity
-            severity = self.calculate_severity(text)
-            feed_item.severity = severity
+            # Calculate severity (only if not already set for KEV)
+            if feed_item.source_name != "CISA KEV":
+                severity = self.calculate_severity(text)
+                feed_item.severity = severity
             
             # Calculate relevance score
             relevance = self.calculate_relevance_score(text, tag_dict)
+            
+            # Ensure KEV items maintain high relevance
+            if feed_item.source_name == "CISA KEV":
+                relevance = max(relevance, 0.95)
+            
             feed_item.relevance_score = relevance
             
             session.commit()
