@@ -5,6 +5,12 @@ import os
 
 class Database:
     def __init__(self, db_path='apt_ack.db'):
+        # Always use absolute path relative to project root
+        if not os.path.isabs(db_path):
+            # Get project root (parent of storage directory)
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            db_path = os.path.join(project_root, db_path)
+        
         self.db_path = db_path
         self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
