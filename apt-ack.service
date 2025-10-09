@@ -8,6 +8,7 @@ Type=oneshot
 User=%u
 WorkingDirectory=/home/baals/Desktop/bigdev/APT-ACK
 Environment="PATH=/home/baals/Desktop/bigdev/APT-ACK/venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/home/baals/Desktop/bigdev/APT-ACK/.env
 ExecStart=/home/baals/Desktop/bigdev/APT-ACK/venv/bin/python /home/baals/Desktop/bigdev/APT-ACK/scripts/run_collection.py --skip-nvd
 StandardOutput=append:/home/baals/Desktop/bigdev/APT-ACK/logs/collection.log
 StandardError=append:/home/baals/Desktop/bigdev/APT-ACK/logs/collection.log
