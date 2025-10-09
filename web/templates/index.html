@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="dashboard()" x-init="loadStats(), loadFeeds()">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Total Items</div>
+            <div class="text-3xl font-bold mt-2" x-text="stats.total_items"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Total IOCs</div>
+            <div class="text-3xl font-bold mt-2" x-text="stats.total_iocs"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">CVEs</div>
+            <div class="text-3xl font-bold mt-2" x-text="stats.total_cves"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Last 24h</div>
+            <div class="text-3xl font-bold mt-2" x-text="stats.recent_count"></div>
+        </div>
+    </div>
+
+    <!-- Severity Breakdown -->
+    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-8">
+        <h2 class="text-xl font-bold mb-4">Severity Breakdown</h2>
+        <div class="grid grid-cols-5 gap-4">
+            <template x-for="(count, severity) in stats.severity_counts" :key="severity">
+                <div class="text-center">
+                    <div class="text-2xl font-bold" 
+                         :class="{
+                             'text-red-500': severity === 'critical',
+                             'text-orange-500': severity === 'high',
+                             'text-yellow-500': severity === 'medium',
+                             'text-blue-500': severity === 'low',
+                             'text-gray-500': severity === 'info'
+                         }"
+                         x-text="count"></div>
+                    <div class="text-sm text-gray-400 uppercase" x-text="severity"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Severity</label>
+                <select x-model="filters.severity" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <option value="">All</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                    <option value="info">Info</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Timeframe</label>
+                <select x-model="filters.hours" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <option value="">All time</option>
+                    <option value="24">Last 24 hours</option>
+                    <option value="72">Last 3 days</option>
+                    <option value="168">Last week</option>
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
+                <input type="text" 
+                       x-model="filters.search" 
+                       @keyup.debounce.500ms="loadFeeds()"
+                       placeholder="Search titles and content..." 
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Items -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700">
+        <div class="p-6 border-b border-gray-700">
+            <h2 class="text-xl font-bold">Latest Threat Intelligence</h2>
+        </div>
+        
+        <div class="divide-y divide-gray-700">
+            <template x-for="item in feeds" :key="item.id">
+                <div class="p-6 hover:bg-gray-750 transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="px-2 py-1 text-xs font-semibold rounded"
+                                      :class="{
+                                          'bg-red-900 text-red-200': item.severity === 'critical',
+                                          'bg-orange-900 text-orange-200': item.severity === 'high',
+                                          'bg-yellow-900 text-yellow-200': item.severity === 'medium',
+                                          'bg-blue-900 text-blue-200': item.severity === 'low',
+                                          'bg-gray-700 text-gray-300': item.severity === 'info'
+                                      }"
+                                      x-text="item.severity.toUpperCase()"></span>
+                                <span class="text-sm text-gray-400" x-text="item.source_name"></span>
+                                <span class="text-sm text-gray-500" x-text="formatDate(item.published_date)"></span>
+                            </div>
+                            
+                            <a :href="item.link" target="_blank" class="text-lg font-semibold text-blue-400 hover:text-blue-300" x-text="item.title"></a>
+                            
+                            <p class="mt-2 text-gray-400 text-sm" x-text="item.content_preview"></p>
+                            
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <template x-for="tag in item.tags" :key="tag.name">
+                                    <span class="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded" x-text="tag.name"></span>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <div class="ml-4 text-right">
+                            <div class="text-2xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
+                            <div class="text-xs text-gray-500">Relevance</div>
+                            <template x-if="item.ioc_count > 0">
+                                <div class="mt-2">
+                                    <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="p-6 border-t border-gray-700 flex justify-between items-center">
+            <div class="text-sm text-gray-400">
+                <span x-text="`Showing ${feeds.length} of ${pagination.total} items`"></span>
+            </div>
+            <div class="flex space-x-2">
+                <button @click="prevPage()" 
+                        :disabled="pagination.page <= 1"
+                        :class="pagination.page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'"
+                        class="px-4 py-2 bg-gray-700 rounded">Previous</button>
+                <button @click="nextPage()" 
+                        :disabled="pagination.page >= pagination.pages"
+                        :class="pagination.page >= pagination.pages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'"
+                        class="px-4 py-2 bg-gray-700 rounded">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboard() {
+    return {
+        stats: {
+            total_items: 0,
+            total_iocs: 0,
+            total_cves: 0,
+            recent_count: 0,
+            severity_counts: {}
+        },
+        feeds: [],
+        filters: {
+            severity: '',
+            hours: '',
+            search: ''
+        },
+        pagination: {
+            page: 1,
+            per_page: 20,
+            total: 0,
+            pages: 0
+        },
+        
+        async loadStats() {
+            const response = await fetch('/api/stats');
+            this.stats = await response.json();
+        },
+        
+        async loadFeeds() {
+            const params = new URLSearchParams({
+                page: this.pagination.page,
+                per_page: this.pagination.per_page,
+                ...Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v))
+            });
+            
+            const response = await fetch(`/api/feeds?${params}`);
+            const data = await response.json();
+            
+            this.feeds = data.items;
+            this.pagination.total = data.total;
+            this.pagination.pages = data.pages;
+        },
+        
+        nextPage() {
+            if (this.pagination.page < this.pagination.pages) {
+                this.pagination.page++;
+                this.loadFeeds();
+            }
+        },
+        
+        prevPage() {
+            if (this.pagination.page > 1) {
+                this.pagination.page--;
+                this.loadFeeds();
+            }
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+            return date.toLocaleDateString();
+        }
+    }
+}
+</script>
+{% endblock %}
