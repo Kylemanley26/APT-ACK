@@ -2,19 +2,29 @@ from flask import Flask, render_template, jsonify, request
 from datetime import datetime, timedelta, UTC
 import sys
 import os
+import atexit
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from storage.database import db
 from storage.models import FeedItem, IOC, Tag, SeverityLevel, IOCType
-from storage.init_db import init_db_safe
 from sqlalchemy import func, or_
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
 # Initialize database
-init_db_safe()
+db.init_db()
+
+# Initialize scheduler (only in production or when explicitly enabled)
+if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('ENABLE_SCHEDULER', 'false').lower() == 'true':
+    try:
+        from scheduler import init_scheduler, shutdown_scheduler
+        init_scheduler()
+        atexit.register(shutdown_scheduler)
+        print("[OK] Collection scheduler initialized")
+    except Exception as e:
+        print(f"[WARNING] Failed to initialize scheduler: {e}")
 
 @app.route('/')
 def index():
@@ -318,5 +328,3 @@ def feeds_page():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port)
-
-    
