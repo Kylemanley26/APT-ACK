@@ -7,13 +7,50 @@ class NVDCollector:
     def __init__(self, api_key=None):
         self.base_url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
         self.api_key = api_key
-        self.rate_limit_delay = 6  # 5 requests per 30 seconds = 6 seconds between requests
         
+        # Rate limiting (conservative to avoid 429 errors)
         if api_key:
-            self.rate_limit_delay = 0.6  # 50 requests per 30 seconds with API key
+            # With API key: 50 requests per 30 seconds = 0.6s between requests
+            # But use 1.0s to be safe and avoid bursting
+            self.rate_limit_delay = 1.0
+            self.requests_per_window = 45  # Leave buffer
+            self.window_duration = 30
+        else:
+            # Without API key: 5 requests per 30 seconds = 6s between requests
+            self.rate_limit_delay = 6.5
+            self.requests_per_window = 4  # Leave buffer
+            self.window_duration = 30
+        
+        self.request_times = []
+        self.retry_delays = [5, 10, 20, 40]  # Exponential backoff on 429
     
-    def fetch_cve(self, cve_id):
-        """Fetch detailed information for a specific CVE"""
+    def _wait_for_rate_limit(self):
+        """Ensure we don't exceed rate limits"""
+        current_time = time.time()
+        
+        # Remove old request times outside the window
+        self.request_times = [
+            t for t in self.request_times 
+            if current_time - t < self.window_duration
+        ]
+        
+        # If we've hit the limit, wait until the oldest request expires
+        if len(self.request_times) >= self.requests_per_window:
+            oldest_request = self.request_times[0]
+            wait_time = self.window_duration - (current_time - oldest_request) + 1
+            if wait_time > 0:
+                print(f"  Rate limit approaching, waiting {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                current_time = time.time()
+        
+        # Add current request time
+        self.request_times.append(current_time)
+        
+        # Always add base delay between requests
+        time.sleep(self.rate_limit_delay)
+    
+    def fetch_cve(self, cve_id, retry_count=0):
+        """Fetch detailed information for a specific CVE with retry logic"""
         params = {'cveId': cve_id}
         headers = {}
         
@@ -21,7 +58,27 @@ class NVDCollector:
             headers['apiKey'] = self.api_key
         
         try:
-            response = requests.get(self.base_url, params=params, headers=headers, timeout=30)
+            # Wait for rate limit
+            self._wait_for_rate_limit()
+            
+            response = requests.get(
+                self.base_url, 
+                params=params, 
+                headers=headers, 
+                timeout=30
+            )
+            
+            # Handle rate limiting with exponential backoff
+            if response.status_code == 429:
+                if retry_count < len(self.retry_delays):
+                    wait_time = self.retry_delays[retry_count]
+                    print(f"  Rate limited! Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    return self.fetch_cve(cve_id, retry_count + 1)
+                else:
+                    print(f"  Max retries exceeded for {cve_id}")
+                    return None
+            
             response.raise_for_status()
             data = response.json()
             
@@ -29,8 +86,14 @@ class NVDCollector:
                 return data['vulnerabilities'][0]['cve']
             return None
             
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                print(f"  {cve_id} not found in NVD (may be too new)")
+            else:
+                print(f"  HTTP error fetching {cve_id}: {e}")
+            return None
         except Exception as e:
-            print(f"Error fetching {cve_id} from NVD: {e}")
+            print(f"  Error fetching {cve_id}: {e}")
             return None
     
     def extract_cvss_scores(self, cve_data):
@@ -143,10 +206,6 @@ class NVDCollector:
             print(f"  {cvss_str} | {cwe_str}")
             
             session.commit()
-            
-            # Rate limiting
-            time.sleep(self.rate_limit_delay)
-            
             return True
             
         except Exception as e:
@@ -179,12 +238,27 @@ class NVDCollector:
         enriched_count = 0
         total = len(cve_ids)
         
+        if total == 0:
+            print("No CVEs to enrich")
+            return 0
+        
         print(f"Found {total} CVEs to enrich")
+        
+        if self.api_key:
+            print(f"Using API key - {self.requests_per_window} requests per {self.window_duration}s")
+        else:
+            print(f"No API key - {self.requests_per_window} requests per {self.window_duration}s (slower)")
+        
+        start_time = time.time()
         
         for idx, cve_id in enumerate(cve_ids, 1):
             print(f"\n[{idx}/{total}]", end=" ")
             if self.enrich_cve_ioc(cve_id):
                 enriched_count += 1
         
-        print(f"\n\nEnriched {enriched_count} CVEs")
+        elapsed = time.time() - start_time
+        
+        print(f"\n\nEnriched {enriched_count} CVEs in {elapsed:.1f} seconds")
+        print(f"Average: {elapsed/total:.1f}s per CVE")
+        
         return enriched_count
