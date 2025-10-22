@@ -7,13 +7,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from storage.database import db
 from storage.models import FeedItem, IOC, Tag, SeverityLevel, IOCType
+from storage.init_db import init_db_safe
 from sqlalchemy import func, or_
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
 # Initialize database
-db.init_db()
+init_db_safe()
 
 @app.route('/')
 def index():
