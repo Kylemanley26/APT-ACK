@@ -14,11 +14,14 @@
             background: #000;
         }
 
-        /* Authentic neon sign effect from CodePen */
+        /* Blue neon sign effect */
         .neon-title {
             font: 400 4.2vh "Vibur";
-            color: #fee;
-            text-shadow: 0 -40px 100px, 0 0 2px, 0 0 1em #ff4444, 0 0 0.5em #ff4444, 0 0 0.1em #ff4444, 0 10px 3px #000;
+            color: #fff;
+            text-shadow: 0 0 .5rem #fff,
+                         0 0 2rem #08f,
+                         0 0 4rem #08f,
+                         0 10px 3px #000;
             user-select: none;
         }
 
@@ -65,8 +68,11 @@
 
         .neon-subtitle {
             font: 400 2.25vh "Vibur";
-            color: #fee;
-            text-shadow: 0 0 2px, 0 0 0.8em #ff4444, 0 0 0.4em #ff4444, 0 0 0.1em #ff4444, 0 5px 3px #000;
+            color: #fff;
+            text-shadow: 0 0 .5rem #fff,
+                         0 0 1.5rem #08f,
+                         0 0 3rem #08f,
+                         0 5px 3px #000;
             letter-spacing: 0.15em;
             user-select: none;
         }
@@ -75,7 +81,7 @@
         nav {
             background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(10px);
-            border-bottom: 2px solid rgba(255, 68, 68, 0.3);
+            border-bottom: 2px solid rgba(0, 136, 255, 0.3);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
         }
 
@@ -102,11 +108,13 @@
         /* Neon border effect for content boxes */
         .neon-box {
             background: #0a0a0a !important;
-            border: 1px solid #ff4444 !important;
-            box-shadow: 0 0 5px rgba(255, 68, 68, 0.5),
-                        0 0 10px rgba(255, 68, 68, 0.3),
-                        0 0 15px rgba(255, 68, 68, 0.2),
-                        inset 0 0 5px rgba(255, 68, 68, 0.1) !important;
+            border: 0.2rem solid #fff !important;
+            box-shadow: 0 0 .5rem #fff,
+                        inset 0 0 .5rem #fff,
+                        0 0 2rem #08f,
+                        inset 0 0 2rem #08f,
+                        0 0 4rem #08f,
+                        inset 0 0 4rem #08f !important;
         }
 
         /* Override Tailwind gray backgrounds */
@@ -116,13 +124,14 @@
         }
 
         .border-gray-700 {
-            border-color: #ff4444 !important;
-            box-shadow: 0 0 5px rgba(255, 68, 68, 0.5),
-                        0 0 10px rgba(255, 68, 68, 0.3);
+            border-color: #fff !important;
+            box-shadow: 0 0 .5rem #fff,
+                        0 0 2rem #08f,
+                        0 0 4rem #08f;
         }
 
         .divide-gray-700 > * + * {
-            border-top-color: rgba(255, 68, 68, 0.3) !important;
+            border-top-color: rgba(0, 136, 255, 0.3) !important;
         }
 
         /* White links globally */
@@ -131,7 +140,7 @@
         }
 
         a:hover {
-            color: #ff4444 !important;
+            color: #08f !important;
         }
 
         /* White text for relevance scores and labels */
@@ -175,6 +184,67 @@
             background-color: #6b7280 !important;
             color: #fff !important;
         }
+
+        /* All text in spans/badges should be white */
+        span.text-red-200,
+        span.text-orange-200,
+        span.text-yellow-200,
+        span.text-blue-200,
+        span.text-gray-300,
+        .bg-red-900,
+        .bg-orange-900,
+        .bg-yellow-900 {
+            color: #fff !important;
+        }
+
+        /* Form elements - white text */
+        select,
+        input[type="text"],
+        input {
+            color: #fff !important;
+            background-color: #1a1a1a !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 .5rem #fff,
+                        0 0 1rem #08f;
+        }
+
+        select option {
+            color: #fff !important;
+            background-color: #1a1a1a !important;
+        }
+
+        /* Override Tailwind form classes */
+        .bg-gray-700.border-gray-600 {
+            background-color: #1a1a1a !important;
+            border-color: #fff !important;
+            color: #fff !important;
+            box-shadow: 0 0 .5rem #fff,
+                        0 0 1rem #08f;
+        }
+
+        /* Neon search button */
+        .neon-button {
+            background: transparent !important;
+            border: 0.2rem solid #fff !important;
+            color: #fff !important;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 .5rem #fff,
+                        0 0 2rem #08f,
+                        0 0 4rem #08f;
+        }
+
+        .neon-button:hover {
+            background: #08f !important;
+            box-shadow: 0 0 .5rem #fff,
+                        inset 0 0 .5rem #fff,
+                        0 0 2rem #08f,
+                        inset 0 0 2rem #08f,
+                        0 0 4rem #08f,
+                        inset 0 0 4rem #08f;
+        }
     </style>
 </head>
 <body class="text-white">
@@ -183,11 +253,11 @@
             <div class="flex items-center justify-between h-24">
                 <div class="flex flex-col items-start">
                     <h1 class="neon-title">AP<span>T</span>-A<span>C</span>K</h1>
-                    <span class="neon-subtitle">by I.R.L</span>
+                    <span class="neon-subtitle">By I.R.L</span>
                 </div>
                 <div class="flex space-x-4">
-                    <a href="/" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>                    <a href="/feeds" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Feeds</a>
-                    <a href="/timeline" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Timeline</a>                </div>
+                    <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>                    <a href="/feeds" class="text-white px-3 py-2 rounded-md text-sm font-medium">Feeds</a>
+                    <a href="/timeline" class="text-white px-3 py-2 rounded-md text-sm font-medium">Timeline</a>                </div>
             </div>
         </div>
     </nav>

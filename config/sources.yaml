@@ -1,4 +1,6 @@
+# config/sources.yaml - FULLY CORRECTED
 rss_feeds:
+  # Original (Working)
   - name: "Krebs on Security"
     url: "https://krebsonsecurity.com/feed/"
   - name: "BleepingComputer"
@@ -9,3 +11,61 @@ rss_feeds:
     url: "https://www.schneier.com/feed/atom/"
   - name: "Dark Reading"
     url: "https://www.darkreading.com/rss.xml"
+
+  # Tier 1 - CORRECTED
+  - name: "Microsoft Security Response Center"
+    url: "https://api.msrc.microsoft.com/update-guide/rss"
+  - name: "Cisco Talos Intelligence"
+    url: "https://blog.talosintelligence.com/rss/"
+  - name: "The DFIR Report"
+    url: "https://thedfirreport.com/feed/"
+  - name: "Unit 42"
+    url: "https://unit42.paloaltonetworks.com/feed/"
+  - name: "CISA Advisories"
+    url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+  - name: "Google Threat Analysis Group"
+    url: "https://blog.google/threat-analysis-group/rss/"
+  - name: "Mandiant Threat Intelligence"
+    url: "https://www.mandiant.com/resources/blog/rss.xml"
+  - name: "CrowdStrike Blog"
+    url: "https://www.crowdstrike.com/blog/feed/"
+  - name: "Recorded Future"
+    url: "https://www.recordedfuture.com/feed"
+
+  # Tier 2 - Government/CERT (CORRECTED)
+  - name: "CERT-EU Threat Intelligence"
+    url: "https://cert.europa.eu/publications/threat-intelligence-rss"
+  - name: "CERT-EU Security Advisories"
+    url: "https://cert.europa.eu/publications/security-advisories-rss"
+
+  # Tier 3 - Specialized
+  - name: "SANS Internet Storm Center"
+    url: "https://isc.sans.edu/rssfeed.xml"
+  - name: "Malwarebytes Labs"
+    url: "https://www.malwarebytes.com/blog/feed/"
+  - name: "Securelist (Kaspersky)"
+    url: "https://securelist.com/feed/"
+
+  # Tier 4 - Vulnerabilities
+  - name: "Exploit Database"
+    url: "https://www.exploit-db.com/rss.xml"
+  - name: "Zero Day Initiative"
+    url: "https://www.zerodayinitiative.com/blog?format=rss"
+
+  # Tier 5 - Emerging Threats
+  - name: "Huntress Labs"
+    url: "https://www.huntress.com/blog/rss.xml"
+
+  # VX-Underground via GitHub
+  - name: "VX-Underground Papers"
+    url: "https://github.com/vxunderground/VXUG-Papers/commits/main.atom"
+  - name: "VX-Underground Malware"
+    url: "https://github.com/vxunderground/MalwareSourceCode/commits/main.atom"
+
+  # Abuse.ch (Excellent IOC sources)
+  - name: "Malware Bazaar"
+    url: "https://bazaar.abuse.ch/export/rss/"
+  - name: "URLhaus"
+    url: "https://urlhaus.abuse.ch/rss/"
+  - name: "ThreatFox"
+    url: "https://threatfox.abuse.ch/export/rss/"

@@ -3,12 +3,12 @@
 {% block title %}Feeds - APT-ACK{% endblock %}
 
 {% block content %}
-<div x-data="feedsPage()" x-init="loadFeeds()">
+<div x-data="feedsPage()" x-init="init()">
     <h1 class="text-3xl font-bold mb-6">Threat Intelligence Feeds</h1>
     
     <!-- Filters -->
     <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Severity</label>
                 <select x-model="filters.severity" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
@@ -18,6 +18,15 @@
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
                     <option value="info">Info</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Source</label>
+                <select x-model="filters.source" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <option value="">All Sources</option>
+                    <template x-for="source in sources" :key="source.name">
+                        <option :value="source.name" x-text="source.name + ' (' + source.count + ')'"></option>
+                    </template>
                 </select>
             </div>
             <div>
@@ -31,11 +40,14 @@
             </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
-                <input type="text" 
-                       x-model="filters.search" 
-                       @keyup.debounce.500ms="loadFeeds()"
-                       placeholder="Search titles and content..." 
-                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                <div class="flex gap-2">
+                    <input type="text"
+                           x-model="filters.search"
+                           @keyup.enter="loadFeeds()"
+                           placeholder="Search titles and content..."
+                           class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <button @click="loadFeeds()" class="neon-button">Search</button>
+                </div>
             </div>
         </div>
     </div>
@@ -148,8 +160,10 @@
 function feedsPage() {
     return {
         feeds: [],
+        sources: [],
         filters: {
             severity: '',
+            source: '',
             hours: '',
             search: ''
         },
@@ -159,17 +173,28 @@ function feedsPage() {
             total: 0,
             pages: 0
         },
-        
+
+        async init() {
+            await this.loadSources();
+            await this.loadFeeds();
+        },
+
+        async loadSources() {
+            const response = await fetch('/api/stats');
+            const data = await response.json();
+            this.sources = data.top_sources || [];
+        },
+
         async loadFeeds() {
             const params = new URLSearchParams({
                 page: this.pagination.page,
                 per_page: this.pagination.per_page,
                 ...Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v))
             });
-            
+
             const response = await fetch(`/api/feeds?${params}`);
             const data = await response.json();
-            
+
             this.feeds = data.items;
             this.pagination.total = data.total;
             this.pagination.pages = data.pages;
