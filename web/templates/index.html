@@ -118,11 +118,41 @@
                             <div class="text-xs text-gray-500">Relevance</div>
                             <template x-if="item.ioc_count > 0">
                                 <div class="mt-2">
-                                    <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
+                                    <button @click="item.showIOCs = !item.showIOCs"
+                                            class="text-sm text-yellow-400 hover:text-yellow-300 transition">
+                                        <span x-text="item.ioc_count"></span> IOCs
+                                        <span x-text="item.showIOCs ? '▼' : '►'"></span>
+                                    </button>
                                 </div>
                             </template>
                         </div>
                     </div>
+
+                    <!-- IOC List (shows when clicked) -->
+                    <template x-if="item.ioc_count > 0 && item.showIOCs">
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <div x-init="if (!item.iocs) loadIOCs(item)">
+                                <template x-if="item.iocs">
+                                    <div class="space-y-2">
+                                        <div class="text-sm text-gray-400 mb-2">Indicators of Compromise:</div>
+                                        <template x-for="ioc in item.iocs" :key="ioc.id">
+                                            <a :href="'/ioc/' + getUrlType(ioc.type) + '/' + encodeURIComponent(ioc.value)"
+                                               class="block px-3 py-2 bg-gray-750 hover:bg-gray-700 rounded text-xs transition">
+                                                <span class="text-purple-400 font-semibold" x-text="ioc.type.toUpperCase()"></span>:
+                                                <span class="font-mono text-gray-300" x-text="ioc.value"></span>
+                                                <template x-if="ioc.confidence">
+                                                    <span class="ml-2 text-yellow-400" x-text="'(' + ioc.confidence.toFixed(2) + ')'"></span>
+                                                </template>
+                                            </a>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!item.iocs">
+                                    <div class="text-xs text-gray-500">Loading IOCs...</div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>
@@ -208,11 +238,37 @@ function dashboard() {
             const date = new Date(dateStr);
             const now = new Date();
             const diff = Math.floor((now - date) / 1000);
-            
+
             if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
             if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
             if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
             return date.toLocaleDateString();
+        },
+
+        async loadIOCs(item) {
+            if (item.iocs) return; // Already loaded
+            try {
+                const response = await fetch(`/api/feed/${item.id}`);
+                const data = await response.json();
+                item.iocs = data.iocs || [];
+            } catch (error) {
+                console.error('Failed to load IOCs:', error);
+                item.iocs = [];
+            }
+        },
+
+        getUrlType(iocType) {
+            const typeMap = {
+                'ip': 'ip',
+                'domain': 'domain',
+                'url': 'url',
+                'hash_md5': 'hash-md5',
+                'hash_sha1': 'hash-sha1',
+                'hash_sha256': 'hash-sha256',
+                'email': 'email',
+                'file_path': 'file-path'
+            };
+            return typeMap[iocType] || iocType;
         }
     }
 }

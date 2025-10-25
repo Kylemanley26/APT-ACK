@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}IOC Detail - APT-ACK{% endblock %}
+
+{% block content %}
+<div x-data="iocDetail()" x-init="loadIOC()">
+    <div class="mb-6">
+        <a href="/feeds" class="text-blue-400 hover:text-blue-300">&larr; Back to Feeds</a>
+    </div>
+    
+    <template x-if="loading">
+        <div class="text-center py-12">
+            <div class="text-gray-400">Loading IOC details...</div>
+        </div>
+    </template>
+    
+    <template x-if="!loading && ioc">
+        <div>
+            <!-- Header -->
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="px-3 py-1 text-xs font-semibold rounded bg-purple-900 text-purple-200"
+                                  x-text="ioc.ioc_type.toUpperCase()"></span>
+                            <template x-if="ioc.verified">
+                                <span class="px-2 py-1 text-xs bg-green-900 text-green-200 rounded">Verified</span>
+                            </template>
+                            <template x-if="ioc.occurrence_count > 1">
+                                <span class="px-2 py-1 text-xs bg-yellow-900 text-yellow-200 rounded"
+                                      x-text="'Seen ' + ioc.occurrence_count + 'x'"></span>
+                            </template>
+                        </div>
+                        <h1 class="text-3xl font-bold mb-3 font-mono break-all" x-text="ioc.value"></h1>
+                        <div class="flex items-center space-x-4 text-sm text-gray-400">
+                            <span>First Seen: <span x-text="formatDate(ioc.first_seen)"></span></span>
+                            <span>Last Seen: <span x-text="formatDate(ioc.last_seen)"></span></span>
+                        </div>
+                    </div>
+                    <div class="text-right ml-4">
+                        <div class="text-3xl font-bold text-blue-400" x-text="ioc.confidence.toFixed(2)"></div>
+                        <div class="text-sm text-gray-400">Confidence</div>
+                        <button @click="copyToClipboard(ioc.value)" 
+                                class="mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">
+                            <span x-show="!copied">Copy IOC</span>
+                            <span x-show="copied" class="text-green-400">Copied!</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Context -->
+            <template x-if="ioc.context">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Context</h2>
+                    <p class="text-gray-300" x-text="ioc.context"></p>
+                </div>
+            </template>
+            
+            <!-- Threat Attribution -->
+            <template x-if="ioc.threat_actor || ioc.malware_family || ioc.mitre_techniques">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Threat Attribution</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">Threat Actor</div>
+                            <div class="text-lg font-semibold text-red-400" 
+                                 x-text="ioc.threat_actor || 'Unknown'"></div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">Malware Family</div>
+                            <div class="text-lg font-semibold text-orange-400" 
+                                 x-text="ioc.malware_family || 'Unknown'"></div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">MITRE Techniques</div>
+                            <div class="text-lg font-semibold text-purple-400" 
+                                 x-text="ioc.mitre_techniques || 'None'"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Tags -->
+            <template x-if="ioc.tags && ioc.tags.length > 0">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Tags</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="tag in ioc.tags" :key="tag.name">
+                            <span class="px-3 py-1 text-sm bg-gray-700 text-gray-300 rounded">
+                                <span x-text="tag.name"></span>
+                                <span class="ml-1 text-gray-500" x-text="'(' + tag.category + ')'"></span>
+                            </span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Related IOCs -->
+            <template x-if="ioc.related_iocs && ioc.related_iocs.length > 0">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Related IOCs</h2>
+                    <div class="space-y-2">
+                        <template x-for="related in ioc.related_iocs" :key="related.value">
+                            <a :href="'/ioc/' + getUrlType(related.type) + '/' + encodeURIComponent(related.value)"
+                               class="flex items-center justify-between p-3 bg-gray-750 hover:bg-gray-700 rounded block">
+                                <div class="flex items-center space-x-3">
+                                    <span class="px-2 py-1 text-xs bg-purple-900 text-purple-200 rounded"
+                                          x-text="related.type.toUpperCase()"></span>
+                                    <span class="font-mono text-sm" x-text="related.value"></span>
+                                </div>
+                                <span class="text-sm text-gray-400" x-text="related.confidence.toFixed(2)"></span>
+                            </a>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Source Feed Items -->
+            <template x-if="ioc.feed_items && ioc.feed_items.length > 0">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Source Intelligence (<span x-text="ioc.feed_items.length"></span>)</h2>
+                    <div class="space-y-3">
+                        <template x-for="item in ioc.feed_items" :key="item.id">
+                            <div class="p-4 bg-gray-750 rounded">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <span class="px-2 py-1 text-xs font-semibold rounded"
+                                                  :class="{
+                                                      'bg-red-900 text-red-200': item.severity === 'critical',
+                                                      'bg-orange-900 text-orange-200': item.severity === 'high',
+                                                      'bg-yellow-900 text-yellow-200': item.severity === 'medium',
+                                                      'bg-blue-900 text-blue-200': item.severity === 'low',
+                                                      'bg-gray-700 text-gray-300': item.severity === 'info'
+                                                  }"
+                                                  x-text="item.severity.toUpperCase()"></span>
+                                            <span class="text-sm text-gray-400" x-text="item.source"></span>
+                                        </div>
+                                        <a :href="item.link" 
+                                           target="_blank"
+                                           class="text-blue-400 hover:text-blue-300 font-semibold"
+                                           x-text="item.title"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- External Links -->
+            <div class="flex flex-wrap gap-3">
+                <!-- IP Address Links -->
+                <template x-if="ioc.ioc_type === 'ip'">
+                    <a :href="'https://www.virustotal.com/gui/ip-address/' + ioc.value"
+                       target="_blank"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">
+                        Check on VirusTotal
+                    </a>
+                </template>
+                <template x-if="ioc.ioc_type === 'ip'">
+                    <a :href="'https://www.abuseipdb.com/check/' + ioc.value"
+                       target="_blank"
+                       class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded">
+                        Check on AbuseIPDB
+                    </a>
+                </template>
+
+                <!-- Domain Links -->
+                <template x-if="ioc.ioc_type === 'domain'">
+                    <a :href="'https://www.virustotal.com/gui/domain/' + ioc.value"
+                       target="_blank"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">
+                        Check on VirusTotal
+                    </a>
+                </template>
+                <template x-if="ioc.ioc_type === 'domain'">
+                    <a :href="'https://urlscan.io/search/#' + ioc.value"
+                       target="_blank"
+                       class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded">
+                        Check on URLScan
+                    </a>
+                </template>
+
+                <!-- Hash Links -->
+                <template x-if="['hash-md5', 'hash-sha1', 'hash-sha256'].includes(ioc.ioc_type)">
+                    <a :href="'https://www.virustotal.com/gui/file/' + ioc.value"
+                       target="_blank"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">
+                        Check on VirusTotal
+                    </a>
+                </template>
+
+                <!-- URL Links -->
+                <template x-if="ioc.ioc_type === 'url'">
+                    <a :href="'https://urlscan.io/search/#' + encodeURIComponent(ioc.value)"
+                       target="_blank"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">
+                        Check on URLScan
+                    </a>
+                </template>
+            </div>
+        </div>
+    </template>
+    
+    <template x-if="!loading && error">
+        <div class="bg-red-900 border border-red-700 p-6 rounded-lg text-center">
+            <div class="text-red-200" x-text="error"></div>
+        </div>
+    </template>
+</div>
+
+<script>
+function iocDetail() {
+    return {
+        ioc: null,
+        loading: true,
+        error: null,
+        copied: false,
+        
+        async loadIOC() {
+            const pathParts = window.location.pathname.split('/');
+            const iocType = pathParts[2];
+            const iocValue = decodeURIComponent(pathParts.slice(3).join('/'));
+            
+            try {
+                const response = await fetch(`/api/ioc/${iocType}/${encodeURIComponent(iocValue)}`);
+                if (!response.ok) {
+                    throw new Error('IOC not found');
+                }
+                this.ioc = await response.json();
+            } catch (err) {
+                this.error = err.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return 'Unknown';
+            return new Date(dateStr).toLocaleDateString();
+        },
+        
+        async copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.copied = true;
+                setTimeout(() => this.copied = false, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        },
+        
+        getUrlType(iocType) {
+            const typeMap = {
+                'ip': 'ip',
+                'domain': 'domain',
+                'url': 'url',
+                'hash_md5': 'hash-md5',
+                'hash_sha1': 'hash-sha1',
+                'hash_sha256': 'hash-sha256',
+                'email': 'email',
+                'file_path': 'file-path'
+            };
+            return typeMap[iocType] || iocType;
+        }
+    }
+}
+</script>
+{% endblock %}
