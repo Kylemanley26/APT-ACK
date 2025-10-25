@@ -28,6 +28,32 @@ class ThreatIntelOrchestrator:
             'items_tagged': 0,
             'cves_enriched': 0
         }
+    def run_levelblue_enrichment(self, days=7, limit=100):
+        self.log("Starting LevelBlue OTX enrichment...")
+        
+        try:
+            api_key = os.environ.get('LEVELBLUE_API_KEY')
+            if not api_key:
+                self.log("No LEVELBLUE_API_KEY found, skipping")
+                return False
+            
+            from collectors.levelblue_otx import LevelBlueCollector
+            collector = LevelBlueCollector(api_key=api_key)
+            
+            # Enrich IOCs
+            enriched = collector.enrich_recent_iocs(days=days, limit=limit)
+            self.stats['iocs_enriched'] = enriched
+            
+            # Collect pulses
+            pulses = collector.collect_pulses(days_back=days)
+            self.stats['otx_pulses'] = pulses
+            
+            self.log(f"LevelBlue enrichment complete: {enriched} IOCs, {pulses} pulses")
+            return True
+            
+        except Exception as e:
+            self.log(f"ERROR in LevelBlue enrichment: {e}")
+            return False
     
     def log(self, message):
         """Simple logging with timestamp"""
@@ -134,7 +160,7 @@ class ThreatIntelOrchestrator:
         print(f"  CVEs Enriched: {self.stats['cves_enriched']}")
         print("\n" + "="*80 + "\n")
     
-    def run_full_pipeline(self, skip_nvd=False, nvd_limit=None):
+    def run_full_pipeline(self, skip_nvd=False, nvd_limit=None, use_levelblue=True):
         """Run complete collection and enrichment pipeline"""
         self.log("="*80)
         self.log("APT-ACK THREAT INTELLIGENCE COLLECTION STARTED")
@@ -156,6 +182,9 @@ class ThreatIntelOrchestrator:
             self.run_nvd_enrichment(limit=nvd_limit)
         else:
             self.log("Skipping NVD enrichment (use --enrich-nvd to enable)")
+        
+        if use_levelblue:
+            self.run_levelblue_enrichment(days=7, limit=100)
         
         # Summary
         self.print_summary()
