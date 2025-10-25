@@ -4,21 +4,190 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}APT-ACK{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Vibur">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* Jet black background */
+        body {
+            background: #000;
+        }
+
+        /* Authentic neon sign effect from CodePen */
+        .neon-title {
+            font: 400 4.2vh "Vibur";
+            color: #fee;
+            text-shadow: 0 -40px 100px, 0 0 2px, 0 0 1em #ff4444, 0 0 0.5em #ff4444, 0 0 0.1em #ff4444, 0 10px 3px #000;
+            user-select: none;
+        }
+
+        .neon-title span {
+            animation: blink linear infinite 2s;
+        }
+
+        .neon-title span:nth-of-type(2) {
+            animation: blink linear infinite 3s;
+        }
+
+        @keyframes blink {
+            78% {
+                color: inherit;
+                text-shadow: inherit;
+            }
+            79% {
+                color: #333;
+            }
+            80% {
+                text-shadow: none;
+            }
+            81% {
+                color: inherit;
+                text-shadow: inherit;
+            }
+            82% {
+                color: #333;
+                text-shadow: none;
+            }
+            83% {
+                color: inherit;
+                text-shadow: inherit;
+            }
+            92% {
+                color: #333;
+                text-shadow: none;
+            }
+            92.5% {
+                color: inherit;
+                text-shadow: inherit;
+            }
+        }
+
+        .neon-subtitle {
+            font: 400 2.25vh "Vibur";
+            color: #fee;
+            text-shadow: 0 0 2px, 0 0 0.8em #ff4444, 0 0 0.4em #ff4444, 0 0 0.1em #ff4444, 0 5px 3px #000;
+            letter-spacing: 0.15em;
+            user-select: none;
+        }
+
+        /* Navbar with transparency */
+        nav {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255, 68, 68, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Content area adjustments */
+        main {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            padding: 2rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Enhanced nav links */
+        nav a {
+            transition: all 0.3s ease;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        nav a:hover {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Neon border effect for content boxes */
+        .neon-box {
+            background: #0a0a0a !important;
+            border: 1px solid #ff4444 !important;
+            box-shadow: 0 0 5px rgba(255, 68, 68, 0.5),
+                        0 0 10px rgba(255, 68, 68, 0.3),
+                        0 0 15px rgba(255, 68, 68, 0.2),
+                        inset 0 0 5px rgba(255, 68, 68, 0.1) !important;
+        }
+
+        /* Override Tailwind gray backgrounds */
+        .bg-gray-800,
+        .bg-gray-750 {
+            background: #0a0a0a !important;
+        }
+
+        .border-gray-700 {
+            border-color: #ff4444 !important;
+            box-shadow: 0 0 5px rgba(255, 68, 68, 0.5),
+                        0 0 10px rgba(255, 68, 68, 0.3);
+        }
+
+        .divide-gray-700 > * + * {
+            border-top-color: rgba(255, 68, 68, 0.3) !important;
+        }
+
+        /* White links globally */
+        a {
+            color: #fff !important;
+        }
+
+        a:hover {
+            color: #ff4444 !important;
+        }
+
+        /* White text for relevance scores and labels */
+        .text-blue-400,
+        .text-blue-500,
+        .text-gray-400 {
+            color: #fff !important;
+        }
+
+        /* Low severity - white text */
+        .text-blue-200,
+        .text-blue-600,
+        .text-blue-900 {
+            color: #fff !important;
+        }
+
+        .bg-blue-900 {
+            background-color: transparent !important;
+            border: 1px solid #fff !important;
+            color: #fff !important;
+        }
+
+        /* Info severity - keep gray */
+        .text-gray-300,
+        .text-gray-500 {
+            color: #6b7280 !important;
+        }
+
+        .bg-gray-700 {
+            background-color: #374151 !important;
+            color: #6b7280 !important;
+        }
+
+        /* Timeline severity colors */
+        .bg-blue-600 {
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+
+        .bg-gray-600 {
+            background-color: #6b7280 !important;
+            color: #fff !important;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-    <nav class="bg-gray-800 border-b border-gray-700">
+<body class="text-white">
+    <nav class="border-b border-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-red-500">APT-ACK</h1>
-                    <span class="ml-3 text-sm text-gray-400">Threat Intelligence Aggregator</span>
+            <div class="flex items-center justify-between h-24">
+                <div class="flex flex-col items-start">
+                    <h1 class="neon-title">AP<span>T</span>-A<span>C</span>K</h1>
+                    <span class="neon-subtitle">by I.R.L</span>
                 </div>
                 <div class="flex space-x-4">
-                    <a href="/" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>                    <a href="/feeds" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Feeds</a>
-                    <a href="/timeline" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Timeline</a>                </div>
+                    <a href="/" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>                    <a href="/feeds" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Feeds</a>
+                    <a href="/timeline" class="text-white hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Timeline</a>                </div>
             </div>
         </div>
     </nav>
