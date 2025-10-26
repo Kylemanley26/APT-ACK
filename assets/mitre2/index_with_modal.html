@@ -67,15 +67,6 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Source</label>
-                <select x-model="filters.source" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All Sources</option>
-                    <template x-for="src in availableSources" :key="src.name">
-                        <option :value="src.name" x-text="src.name + ' (' + src.count + ')'"></option>
-                    </template>
-                </select>
-            </div>
-            <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Timeframe</label>
                 <select x-model="filters.hours" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
                     <option value="">All time</option>
@@ -84,12 +75,12 @@
                     <option value="168">Last week</option>
                 </select>
             </div>
-            <div>
+            <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
-                <input type="text"
-                       x-model="filters.search"
+                <input type="text" 
+                       x-model="filters.search" 
                        @keyup.debounce.500ms="loadFeeds()"
-                       placeholder="Search titles and content..."
+                       placeholder="Search titles and content..." 
                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
             </div>
         </div>
@@ -135,20 +126,19 @@
                                 <div class="mt-3 flex flex-wrap gap-2 items-center">
                                     <span class="text-xs text-gray-500">MITRE ATT&CK:</span>
                                     <template x-for="technique in item.techniques" :key="technique.id">
-                                        <a :href="'/feeds?technique=' + technique.id.toLowerCase()"
+                                        <button @click="showMitreModal(technique)" 
                                            class="group relative px-2 py-1 text-xs bg-purple-900 text-purple-200 rounded hover:bg-purple-800 font-mono transition">
                                             <span x-text="technique.id"></span>
-
+                                            
                                             <!-- Tooltip -->
                                             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 border border-gray-700">
                                                 <div class="font-semibold" x-text="technique.name"></div>
                                                 <div class="text-gray-400 text-xs" x-text="technique.tactic"></div>
-                                                <div class="text-gray-500 text-xs mt-1">Click to filter feeds</div>
                                                 <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                                                     <div class="border-4 border-transparent border-t-gray-900"></div>
                                                 </div>
                                             </div>
-                                        </a>
+                                        </button>
                                     </template>
                                 </div>
                             </template>
@@ -164,39 +154,9 @@
                         </div>
                         
                         <div class="ml-4 text-right">
-                            <!-- CVSS Score (if available) -->
-                            <template x-if="item.cvss_score">
-                                <div class="mb-3">
-                                    <div class="text-2xl font-bold"
-                                         :class="{
-                                             'text-red-400': item.cvss_score >= 9.0,
-                                             'text-orange-400': item.cvss_score >= 7.0 && item.cvss_score < 9.0,
-                                             'text-yellow-400': item.cvss_score >= 4.0 && item.cvss_score < 7.0,
-                                             'text-blue-400': item.cvss_score < 4.0
-                                         }"
-                                         x-text="item.cvss_score.toFixed(1)"></div>
-                                    <div class="text-xs font-semibold uppercase"
-                                         :class="{
-                                             'text-red-300': item.cvss_severity === 'CRITICAL',
-                                             'text-orange-300': item.cvss_severity === 'HIGH',
-                                             'text-yellow-300': item.cvss_severity === 'MEDIUM',
-                                             'text-blue-300': item.cvss_severity === 'LOW'
-                                         }"
-                                         x-text="'CVSS ' + (item.cvss_severity || '')"></div>
-                                    <template x-if="item.cve_count > 0">
-                                        <div class="text-xs text-gray-400 mt-1" x-text="item.cve_count + ' CVE' + (item.cve_count > 1 ? 's' : '')"></div>
-                                    </template>
-                                </div>
-                            </template>
-
-                            <!-- Relevance Score (always shown) -->
-                            <div>
-                                <div class="text-xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
-                                <div class="text-xs text-gray-500">Relevance</div>
-                            </div>
-
-                            <!-- IOC Count -->
-                            <template x-if="item.ioc_count > 0 && !item.cvss_score">
+                            <div class="text-2xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
+                            <div class="text-xs text-gray-500">Relevance</div>
+                            <template x-if="item.ioc_count > 0">
                                 <div class="mt-2">
                                     <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
                                 </div>
@@ -243,11 +203,9 @@ function dashboard() {
         feeds: [],
         filters: {
             severity: '',
-            source: '',
             hours: '',
             search: ''
         },
-        availableSources: [],
         pagination: {
             page: 1,
             per_page: 20,
@@ -282,22 +240,12 @@ function dashboard() {
         
         init() {
             this.loadStats();
-            this.loadSources();
             this.loadFeeds();
         },
-
+        
         async loadStats() {
             const response = await fetch('/api/stats');
             this.stats = await response.json();
-        },
-
-        async loadSources() {
-            try {
-                const response = await fetch('/api/sources');
-                this.availableSources = await response.json();
-            } catch (error) {
-                console.error('Failed to load sources:', error);
-            }
         },
         
         async loadFeeds() {

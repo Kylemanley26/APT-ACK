@@ -12,21 +12,21 @@
             <div class="flex items-center space-x-4 flex-wrap gap-2">
                 <span class="text-blue-200 font-semibold">Active Filters:</span>
                 
-                <!-- Technique Filters (Multiple) -->
-                <template x-for="techId in filters.techniques" :key="techId">
+                <!-- Technique Filter -->
+                <template x-if="filters.technique">
                     <div class="flex items-center space-x-2 bg-purple-800 px-3 py-1 rounded">
                         <span class="text-purple-200 text-sm">
-                            <span class="font-mono font-bold" x-text="techId.toUpperCase()"></span>:
-                            <span x-text="techniqueNames[techId] || techId"></span>
+                            <span class="font-mono font-bold" x-text="filters.technique.toUpperCase()"></span>:
+                            <span x-text="techniqueName"></span>
                         </span>
-                        <button @click="removeTechnique(techId)" class="text-purple-300 hover:text-white">
+                        <button @click="clearTechnique()" class="text-purple-300 hover:text-white">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
                         </button>
                     </div>
                 </template>
-
+                
                 <!-- Tag Filter -->
                 <template x-if="filters.tag">
                     <div class="flex items-center space-x-2 bg-gray-700 px-3 py-1 rounded">
@@ -50,19 +50,7 @@
                         </button>
                     </div>
                 </template>
-
-                <!-- Source Filter -->
-                <template x-if="filters.source">
-                    <div class="flex items-center space-x-2 bg-gray-700 px-3 py-1 rounded">
-                        <span class="text-gray-200 text-sm" x-text="'Source: ' + filters.source"></span>
-                        <button @click="clearSource()" class="text-gray-300 hover:text-white">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </template>
-
+                
                 <!-- Hours Filter -->
                 <template x-if="filters.hours">
                     <div class="flex items-center space-x-2 bg-gray-700 px-3 py-1 rounded">
@@ -97,15 +85,6 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Source</label>
-                <select x-model="filters.source" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All Sources</option>
-                    <template x-for="src in availableSources" :key="src.name">
-                        <option :value="src.name" x-text="src.name + ' (' + src.count + ')'"></option>
-                    </template>
-                </select>
-            </div>
-            <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Timeframe</label>
                 <select x-model="filters.hours" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
                     <option value="">All time</option>
@@ -115,12 +94,12 @@
                     <option value="720">Last 30 days</option>
                 </select>
             </div>
-            <div>
+            <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
-                <input type="text"
-                       x-model="filters.search"
+                <input type="text" 
+                       x-model="filters.search" 
                        @keyup.debounce.500ms="loadFeeds()"
-                       placeholder="Search titles and content..."
+                       placeholder="Search titles and content..." 
                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
             </div>
         </div>
@@ -174,21 +153,17 @@
                                     <div class="flex flex-wrap gap-2 items-center">
                                         <span class="text-xs text-gray-500">MITRE ATT&CK:</span>
                                         <template x-for="technique in item.techniques" :key="technique.id">
-                                            <button @click="filterByTechnique(technique)"
+                                            <button @click.prevent="showMitreModal(technique)" 
                                                class="group relative px-2 py-1 text-xs rounded font-mono transition"
-                                               :class="filters.techniques.includes(technique.id.toLowerCase())
-                                                       ? 'bg-purple-700 text-purple-100 ring-2 ring-purple-400'
+                                               :class="filters.technique && filters.technique.toLowerCase() === technique.id.toLowerCase() 
+                                                       ? 'bg-purple-700 text-purple-100 ring-2 ring-purple-400' 
                                                        : 'bg-purple-900 text-purple-200 hover:bg-purple-800'">
                                                 <span x-text="technique.id"></span>
-
+                                                
                                                 <!-- Tooltip -->
                                                 <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 border border-gray-700">
                                                     <div class="font-semibold" x-text="technique.name"></div>
                                                     <div class="text-gray-400 text-xs" x-text="technique.tactic"></div>
-                                                    <div class="text-gray-500 text-xs mt-1">
-                                                        <span x-show="!filters.techniques.includes(technique.id.toLowerCase())">Click to add filter</span>
-                                                        <span x-show="filters.techniques.includes(technique.id.toLowerCase())">Already filtered</span>
-                                                    </div>
                                                     <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                                                         <div class="border-4 border-transparent border-t-gray-900"></div>
                                                     </div>
@@ -215,39 +190,9 @@
                         </div>
                         
                         <div class="ml-4 text-right">
-                            <!-- CVSS Score (if available) -->
-                            <template x-if="item.cvss_score">
-                                <div class="mb-3">
-                                    <div class="text-2xl font-bold"
-                                         :class="{
-                                             'text-red-400': item.cvss_score >= 9.0,
-                                             'text-orange-400': item.cvss_score >= 7.0 && item.cvss_score < 9.0,
-                                             'text-yellow-400': item.cvss_score >= 4.0 && item.cvss_score < 7.0,
-                                             'text-blue-400': item.cvss_score < 4.0
-                                         }"
-                                         x-text="item.cvss_score.toFixed(1)"></div>
-                                    <div class="text-xs font-semibold uppercase"
-                                         :class="{
-                                             'text-red-300': item.cvss_severity === 'CRITICAL',
-                                             'text-orange-300': item.cvss_severity === 'HIGH',
-                                             'text-yellow-300': item.cvss_severity === 'MEDIUM',
-                                             'text-blue-300': item.cvss_severity === 'LOW'
-                                         }"
-                                         x-text="'CVSS ' + (item.cvss_severity || '')"></div>
-                                    <template x-if="item.cve_count > 0">
-                                        <div class="text-xs text-gray-400 mt-1" x-text="item.cve_count + ' CVE' + (item.cve_count > 1 ? 's' : '')"></div>
-                                    </template>
-                                </div>
-                            </template>
-
-                            <!-- Relevance Score (always shown) -->
-                            <div>
-                                <div class="text-xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
-                                <div class="text-xs text-gray-500">Relevance</div>
-                            </div>
-
-                            <!-- IOC Count -->
-                            <template x-if="item.ioc_count > 0 && !item.cvss_score">
+                            <div class="text-2xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
+                            <div class="text-xs text-gray-500">Relevance</div>
+                            <template x-if="item.ioc_count > 0">
                                 <div class="mt-2">
                                     <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
                                 </div>
@@ -307,10 +252,9 @@ function feedsPage() {
         feeds: [],
         filters: {
             severity: '',
-            source: '',
             hours: '',
             search: '',
-            techniques: [],  // Changed to array for multi-technique filtering
+            technique: '',
             tag: ''
         },
         pagination: {
@@ -320,8 +264,7 @@ function feedsPage() {
             pages: 0
         },
         loading: false,
-        availableSources: [],  // Store available sources from API
-        techniqueNames: {},  // Changed to object to store multiple technique names
+        techniqueName: '',
         
         // MITRE Modal state
         mitreModal: {
@@ -351,31 +294,17 @@ function feedsPage() {
         init() {
             // Parse URL parameters
             const urlParams = new URLSearchParams(window.location.search);
-            const techniqueParam = urlParams.get('technique') || '';
-            this.filters.techniques = techniqueParam ? techniqueParam.split(',').map(t => t.trim().toLowerCase()).filter(t => t) : [];
+            this.filters.technique = urlParams.get('technique') || '';
             this.filters.tag = urlParams.get('tag') || '';
             this.filters.severity = urlParams.get('severity') || '';
-            this.filters.source = urlParams.get('source') || '';
             this.filters.hours = urlParams.get('hours') || '';
             this.filters.search = urlParams.get('search') || '';
-
-            // Load available sources
-            this.loadSources();
-
+            
             this.loadFeeds();
-
-            // Load technique names if filtering by techniques
-            if (this.filters.techniques.length > 0) {
-                this.loadTechniqueNames();
-            }
-        },
-
-        async loadSources() {
-            try {
-                const response = await fetch('/api/sources');
-                this.availableSources = await response.json();
-            } catch (error) {
-                console.error('Failed to load sources:', error);
+            
+            // Load technique name if filtering by technique
+            if (this.filters.technique) {
+                this.loadTechniqueName();
             }
         },
         
@@ -383,22 +312,14 @@ function feedsPage() {
             this.loading = true;
             const params = new URLSearchParams({
                 page: this.pagination.page,
-                per_page: this.pagination.per_page
+                per_page: this.pagination.per_page,
+                ...Object.fromEntries(Object.entries(this.filters).filter(([_, v]) => v))
             });
-
-            // Add filters, handling techniques array specially
-            Object.entries(this.filters).forEach(([key, value]) => {
-                if (key === 'techniques' && value.length > 0) {
-                    params.set('technique', value.join(','));
-                } else if (value && key !== 'techniques') {
-                    params.set(key, value);
-                }
-            });
-
+            
             try {
                 const response = await fetch(`/api/feeds?${params}`);
                 const data = await response.json();
-
+                
                 this.feeds = data.items;
                 this.pagination.total = data.total;
                 this.pagination.pages = data.pages;
@@ -408,24 +329,21 @@ function feedsPage() {
                 this.loading = false;
             }
         },
-
-        async loadTechniqueNames() {
+        
+        async loadTechniqueName() {
             try {
                 const response = await fetch('/api/techniques');
                 const data = await response.json();
-
-                // Load names for all filtered techniques
-                this.filters.techniques.forEach(techId => {
-                    for (const tactic in data) {
-                        const technique = data[tactic].find(t => t.id.toLowerCase() === techId.toLowerCase());
-                        if (technique) {
-                            this.techniqueNames[techId] = technique.name;
-                            break;
-                        }
+                
+                for (const tactic in data) {
+                    const technique = data[tactic].find(t => t.id.toLowerCase() === this.filters.technique.toLowerCase());
+                    if (technique) {
+                        this.techniqueName = technique.name;
+                        break;
                     }
-                });
+                }
             } catch (error) {
-                console.error('Failed to load technique names:', error);
+                console.error('Failed to load technique name:', error);
             }
         },
         
@@ -463,39 +381,26 @@ function feedsPage() {
         viewTechnique(technique) {
             this.mitreModal.technique = technique;
         },
-
+        
+        filterByTechnique(techniqueId) {
+            this.filters.technique = techniqueId.toLowerCase();
+            this.pagination.page = 1;
+            this.updateURL();
+            this.loadFeeds();
+            this.loadTechniqueName();
+            this.mitreModal.show = false;
+        },
+        
         filterByTag(tagName) {
             this.filters.tag = tagName;
             this.pagination.page = 1;
             this.updateURL();
             this.loadFeeds();
         },
-
-        filterByTechnique(technique) {
-            const techId = technique.id.toLowerCase();
-            // Add technique if not already in filter (additive)
-            if (!this.filters.techniques.includes(techId)) {
-                this.filters.techniques.push(techId);
-                this.techniqueNames[techId] = technique.name;
-                this.pagination.page = 1;
-                this.updateURL();
-                this.loadFeeds();
-            }
-        },
-
-        removeTechnique(techId) {
-            // Remove a specific technique from filter
-            this.filters.techniques = this.filters.techniques.filter(t => t !== techId);
-            delete this.techniqueNames[techId];
-            this.pagination.page = 1;
-            this.updateURL();
-            this.loadFeeds();
-        },
-
-        clearTechniques() {
-            // Clear all technique filters
-            this.filters.techniques = [];
-            this.techniqueNames = {};
+        
+        clearTechnique() {
+            this.filters.technique = '';
+            this.techniqueName = '';
             this.pagination.page = 1;
             this.updateURL();
             this.loadFeeds();
@@ -521,31 +426,23 @@ function feedsPage() {
             this.updateURL();
             this.loadFeeds();
         },
-
-        clearSource() {
-            this.filters.source = '';
-            this.pagination.page = 1;
-            this.updateURL();
-            this.loadFeeds();
-        },
-
+        
         clearAllFilters() {
             this.filters = {
                 severity: '',
-                source: '',
                 hours: '',
                 search: '',
-                techniques: [],
+                technique: '',
                 tag: ''
             };
-            this.techniqueNames = {};
+            this.techniqueName = '';
             this.pagination.page = 1;
             this.updateURL();
             this.loadFeeds();
         },
-
+        
         hasActiveFilters() {
-            return this.filters.techniques.length > 0 || this.filters.tag || this.filters.severity || this.filters.hours;
+            return this.filters.technique || this.filters.tag || this.filters.severity || this.filters.hours;
         },
         
         getTimeframeLabel() {
@@ -560,13 +457,9 @@ function feedsPage() {
         updateURL() {
             const params = new URLSearchParams();
             Object.entries(this.filters).forEach(([key, value]) => {
-                if (key === 'techniques' && value.length > 0) {
-                    params.set('technique', value.join(','));
-                } else if (value && key !== 'techniques') {
-                    params.set(key, value);
-                }
+                if (value) params.set(key, value);
             });
-
+            
             const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname;
             window.history.replaceState({}, '', newURL);
         },

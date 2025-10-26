@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+APT-ACK Collection Pipeline with MITRE ATT&CK Mapping
+"""
 import sys
 import os
 from datetime import datetime, UTC
@@ -27,35 +31,9 @@ class ThreatIntelOrchestrator:
             'kev_items': 0,
             'iocs_extracted': 0,
             'items_tagged': 0,
-            'mitre_mapped': 0,
-            'cves_enriched': 0
+            'cves_enriched': 0,
+            'mitre_mapped': 0
         }
-    def run_levelblue_enrichment(self, days=7, limit=100):
-        self.log("Starting LevelBlue OTX enrichment...")
-        
-        try:
-            api_key = os.environ.get('LEVELBLUE_API_KEY')
-            if not api_key:
-                self.log("No LEVELBLUE_API_KEY found, skipping")
-                return False
-            
-            from collectors.levelblue_otx import LevelBlueCollector
-            collector = LevelBlueCollector(api_key=api_key)
-            
-            # Enrich IOCs
-            enriched = collector.enrich_recent_iocs(days=days, limit=limit)
-            self.stats['iocs_enriched'] = enriched
-            
-            # Collect pulses
-            pulses = collector.collect_pulses(days_back=days)
-            self.stats['otx_pulses'] = pulses
-            
-            self.log(f"LevelBlue enrichment complete: {enriched} IOCs, {pulses} pulses")
-            return True
-            
-        except Exception as e:
-            self.log(f"ERROR in LevelBlue enrichment: {e}")
-            return False
     
     def log(self, message):
         """Simple logging with timestamp"""
@@ -116,35 +94,35 @@ class ThreatIntelOrchestrator:
     def run_tagging(self):
         """Tag and score untagged items"""
         self.log("Starting threat tagging...")
-
+        
         try:
             tagger = ThreatTagger()
             total = tagger.tag_all_untagged()
-
+            
             self.stats['items_tagged'] = total
             self.log(f"Tagging complete: {total} items tagged")
             return True
-
+            
         except Exception as e:
             self.log(f"ERROR in tagging: {e}")
             return False
-
+    
     def run_mitre_mapping(self):
         """Map threat intel to MITRE ATT&CK techniques"""
         self.log("Starting MITRE ATT&CK mapping...")
-
+        
         try:
             mapper = MitreAttackMapper()
             total = mapper.enrich_all_items()
-
+            
             self.stats['mitre_mapped'] = total
             self.log(f"MITRE mapping complete: {total} items enriched")
             return True
-
+            
         except Exception as e:
             self.log(f"ERROR in MITRE mapping: {e}")
             return False
-
+    
     def run_nvd_enrichment(self, limit=None):
         """Enrich CVEs with NVD data"""
         self.log("Starting NVD enrichment...")
@@ -165,7 +143,7 @@ class ThreatIntelOrchestrator:
     def print_summary(self):
         """Print execution summary"""
         duration = (datetime.now(UTC) - self.start_time).total_seconds()
-
+        
         print("\n" + "="*80)
         print("COLLECTION RUN SUMMARY".center(80))
         print("="*80)
@@ -179,54 +157,51 @@ class ThreatIntelOrchestrator:
         print(f"  CVEs Enriched: {self.stats['cves_enriched']}")
         print("\n" + "="*80 + "\n")
     
-    def run_full_pipeline(self, skip_nvd=False, skip_mitre=False, nvd_limit=None, use_levelblue=True):
+    def run_full_pipeline(self, skip_nvd=False, skip_mitre=False, nvd_limit=None):
         """Run complete collection and enrichment pipeline"""
         self.log("="*80)
         self.log("APT-ACK THREAT INTELLIGENCE COLLECTION STARTED")
         self.log("="*80)
-
+        
         # Initialize database
         db.init_db()
-
+        
         # Run collection
         self.run_rss_collection()
         self.run_cisa_kev_collection(days_lookback=7)
-
+        
         # Run enrichment
         self.run_ioc_extraction()
         self.run_tagging()
-
-        # MITRE ATT&CK mapping (after tagging)
+        
+        # MITRE ATT&CK mapping (NEW)
         if not skip_mitre:
             self.run_mitre_mapping()
         else:
             self.log("Skipping MITRE ATT&CK mapping")
-
+        
         # NVD enrichment (optional, can be slow)
         if not skip_nvd:
             self.run_nvd_enrichment(limit=nvd_limit)
         else:
             self.log("Skipping NVD enrichment (use --enrich-nvd to enable)")
-
-        if use_levelblue:
-            self.run_levelblue_enrichment(days=7, limit=100)
-
+        
         # Summary
         self.print_summary()
 
 def main():
     import argparse
-
+    
     parser = argparse.ArgumentParser(description='APT-ACK Threat Intelligence Orchestrator')
-    parser.add_argument('--skip-nvd', action='store_true',
+    parser.add_argument('--skip-nvd', action='store_true', 
                        help='Skip NVD enrichment (faster)')
     parser.add_argument('--skip-mitre', action='store_true',
                        help='Skip MITRE ATT&CK mapping')
     parser.add_argument('--nvd-limit', type=int, default=None,
                        help='Limit number of CVEs to enrich (for testing)')
-
+    
     args = parser.parse_args()
-
+    
     orchestrator = ThreatIntelOrchestrator()
     orchestrator.run_full_pipeline(
         skip_nvd=args.skip_nvd,

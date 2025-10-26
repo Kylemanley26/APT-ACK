@@ -1,6 +1,6 @@
 import re
 from storage.database import db
-from storage.models import FeedItem, Tag, SeverityLevel
+from storage.models import FeedItem, Tag, SeverityLevel, IOCType
 
 class ThreatTagger:
     def __init__(self):
@@ -121,34 +121,100 @@ class ThreatTagger:
         
         return SeverityLevel.INFO
     
-    def calculate_relevance_score(self, text, tags):
-        """Calculate relevance score 0.0 to 1.0"""
+    def calculate_relevance_score(self, feed_item, tags):
+        """
+        Calculate relevance score 0.0 to 1.0 based on objective metrics.
+
+        Scoring Philosophy:
+        - CVE threats: Use CVSS scores (objective, standardized)
+        - Non-CVE threats: Use universal threat indicators
+        - Environment agnostic: No org-specific tuning
+
+        Score Breakdown:
+        - 0.0-0.3: Informational/Low priority
+        - 0.3-0.6: Medium priority (monitor)
+        - 0.6-0.8: High priority (investigate)
+        - 0.8-1.0: Critical priority (immediate action)
+        """
         score = 0.0
-        text_lower = text.lower()
-        
-        # Base score on number of tags
-        score += min(len(tags) * 0.1, 0.3)
-        
-        # Boost for threat actors
+        text = f"{feed_item.title} {feed_item.content}".lower()
+
+        # ========================================
+        # PRIMARY: CVSS-Based Scoring for CVEs
+        # ========================================
+        max_cvss = 0.0
+        has_cve = False
+
+        for ioc in feed_item.iocs:
+            if ioc.ioc_type == IOCType.CVE:
+                has_cve = True
+
+                # Use CVSS v3 score (preferred), fallback to v2
+                cvss_score = ioc.cvss_v3_score or ioc.cvss_v2_score
+
+                if cvss_score:
+                    max_cvss = max(max_cvss, cvss_score)
+
+        if max_cvss > 0:
+            # Map CVSS 0-10 to relevance 0-0.7
+            # CVSS 10.0 = 0.7 relevance (leaves room for other factors)
+            # CVSS 9.0 = 0.63
+            # CVSS 7.0 = 0.49
+            # CVSS 5.0 = 0.35
+            score += (max_cvss / 10.0) * 0.7
+
+        # ========================================
+        # UNIVERSAL THREAT INDICATORS
+        # ========================================
+
+        # Threat Actor Activity (+0.2)
+        # APT/threat actor campaigns are universally relevant
         if any(cat == 'threat_actor' for cat in tags.values()):
             score += 0.2
-        
-        # Boost for malware
+
+        # Active Exploitation (+0.25)
+        # "In the wild" exploitation is universally critical
+        if 'actively exploited' in text or 'in the wild' in text or 'exploit available' in text:
+            score += 0.25
+
+        # Widespread Malware Campaigns (+0.15)
+        # Known malware families indicate active threats
         if any(cat == 'malware' for cat in tags.values()):
             score += 0.15
-        
-        # Boost for CVEs
-        if re.search(r'CVE-\d{4}-\d{4,7}', text, re.IGNORECASE):
-            score += 0.25
-        
-        # Boost for zero-day
-        if 'zero-day' in text_lower or 'zero day' in text_lower:
-            score += 0.3
-        
-        # Boost for active exploitation
-        if 'actively exploited' in text_lower or 'in the wild' in text_lower:
-            score += 0.25
-        
+
+        # Zero-Day Vulnerabilities (+0.2)
+        # Unpatched vulnerabilities are universally high priority
+        if 'zero-day' in text or 'zero day' in text or '0-day' in text:
+            score += 0.2
+
+        # Ransomware Activity (+0.2)
+        # Ransomware is a universal critical threat
+        if 'ransomware' in text:
+            score += 0.2
+
+        # Data Breach Incidents (+0.15)
+        # Major breaches indicate successful attacks
+        if 'data breach' in text or 'data leak' in text:
+            score += 0.15
+
+        # ========================================
+        # SOURCE CREDIBILITY BOOSTS
+        # ========================================
+
+        # CISA KEV (Known Exploited Vulnerabilities)
+        # Government-confirmed exploitation = always high priority
+        if feed_item.source_name == "CISA KEV":
+            score = max(score, 0.95)
+
+        # ========================================
+        # PENALTY: Reduce Over-Scoring
+        # ========================================
+
+        # If CVE has low CVSS but keywords boost it, cap score
+        # Prevents "critical vulnerability" in title boosting CVSS 3.0 vuln
+        if has_cve and max_cvss < 7.0:
+            score = min(score, 0.6)  # Cap medium CVSS at medium relevance
+
         return min(score, 1.0)
     
     def tag_feed_item(self, feed_item_id):
@@ -185,9 +251,9 @@ class ThreatTagger:
             if feed_item.source_name != "CISA KEV":
                 severity = self.calculate_severity(text)
                 feed_item.severity = severity
-            
-            # Calculate relevance score
-            relevance = self.calculate_relevance_score(text, tag_dict)
+
+            # Calculate relevance score (UPDATED: now uses feed_item instead of text)
+            relevance = self.calculate_relevance_score(feed_item, tag_dict)
             
             # Ensure KEV items maintain high relevance
             if feed_item.source_name == "CISA KEV":

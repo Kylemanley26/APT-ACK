@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div x-data="dashboard()" x-init="init()">
+<div x-data="dashboard()" x-init="loadStats(), loadFeeds()">
     <!-- Stats Overview -->
     <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
@@ -16,13 +16,8 @@
             <div class="text-gray-400 text-sm">CVEs</div>
             <div class="text-3xl font-bold mt-2" x-text="stats.total_cves"></div>
         </div>
-        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 cursor-pointer hover:bg-gray-750 transition" @click="showMitreMatrix()">
-            <div class="text-gray-400 text-sm flex items-center justify-between">
-                <span>ATT&CK Techniques</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                </svg>
-            </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">ATT&CK Techniques</div>
             <div class="text-3xl font-bold mt-2" x-text="stats.mitre_techniques || 0"></div>
         </div>
         <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
@@ -36,7 +31,7 @@
         <h2 class="text-xl font-bold mb-4">Severity Breakdown</h2>
         <div class="grid grid-cols-5 gap-4">
             <template x-for="(count, severity) in stats.severity_counts" :key="severity">
-                <button @click="filterBySeverity(severity)" class="text-center hover:bg-gray-750 rounded-lg p-4 transition">
+                <div class="text-center">
                     <div class="text-2xl font-bold" 
                          :class="{
                              'text-red-500': severity === 'critical',
@@ -46,8 +41,8 @@
                              'text-gray-500': severity === 'info'
                          }"
                          x-text="count"></div>
-                    <div class="text-sm text-gray-400 uppercase mt-1" x-text="severity"></div>
-                </button>
+                    <div class="text-sm text-gray-400 uppercase" x-text="severity"></div>
+                </div>
             </template>
         </div>
     </div>
@@ -67,15 +62,6 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Source</label>
-                <select x-model="filters.source" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All Sources</option>
-                    <template x-for="src in availableSources" :key="src.name">
-                        <option :value="src.name" x-text="src.name + ' (' + src.count + ')'"></option>
-                    </template>
-                </select>
-            </div>
-            <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Timeframe</label>
                 <select x-model="filters.hours" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
                     <option value="">All time</option>
@@ -84,12 +70,12 @@
                     <option value="168">Last week</option>
                 </select>
             </div>
-            <div>
+            <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
-                <input type="text"
-                       x-model="filters.search"
+                <input type="text" 
+                       x-model="filters.search" 
                        @keyup.debounce.500ms="loadFeeds()"
-                       placeholder="Search titles and content..."
+                       placeholder="Search titles and content..." 
                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
             </div>
         </div>
@@ -97,14 +83,8 @@
 
     <!-- Feed Items -->
     <div class="bg-gray-800 rounded-lg border border-gray-700">
-        <div class="p-6 border-b border-gray-700 flex items-center justify-between">
+        <div class="p-6 border-b border-gray-700">
             <h2 class="text-xl font-bold">Latest Threat Intelligence</h2>
-            <button @click="showMitreMatrix()" class="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
-                </svg>
-                <span>View Matrix</span>
-            </button>
         </div>
         
         <div class="divide-y divide-gray-700">
@@ -132,22 +112,12 @@
                             
                             <!-- MITRE ATT&CK Techniques -->
                             <template x-if="item.techniques && item.techniques.length > 0">
-                                <div class="mt-3 flex flex-wrap gap-2 items-center">
+                                <div class="mt-3 flex flex-wrap gap-2">
                                     <span class="text-xs text-gray-500">MITRE ATT&CK:</span>
                                     <template x-for="technique in item.techniques" :key="technique.id">
-                                        <a :href="'/feeds?technique=' + technique.id.toLowerCase()"
-                                           class="group relative px-2 py-1 text-xs bg-purple-900 text-purple-200 rounded hover:bg-purple-800 font-mono transition">
+                                        <a :href="'/feeds?technique=' + technique.id.toLowerCase()" 
+                                           class="px-2 py-1 text-xs bg-purple-900 text-purple-200 rounded hover:bg-purple-800 font-mono">
                                             <span x-text="technique.id"></span>
-
-                                            <!-- Tooltip -->
-                                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 border border-gray-700">
-                                                <div class="font-semibold" x-text="technique.name"></div>
-                                                <div class="text-gray-400 text-xs" x-text="technique.tactic"></div>
-                                                <div class="text-gray-500 text-xs mt-1">Click to filter feeds</div>
-                                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                                                    <div class="border-4 border-transparent border-t-gray-900"></div>
-                                                </div>
-                                            </div>
                                         </a>
                                     </template>
                                 </div>
@@ -164,39 +134,9 @@
                         </div>
                         
                         <div class="ml-4 text-right">
-                            <!-- CVSS Score (if available) -->
-                            <template x-if="item.cvss_score">
-                                <div class="mb-3">
-                                    <div class="text-2xl font-bold"
-                                         :class="{
-                                             'text-red-400': item.cvss_score >= 9.0,
-                                             'text-orange-400': item.cvss_score >= 7.0 && item.cvss_score < 9.0,
-                                             'text-yellow-400': item.cvss_score >= 4.0 && item.cvss_score < 7.0,
-                                             'text-blue-400': item.cvss_score < 4.0
-                                         }"
-                                         x-text="item.cvss_score.toFixed(1)"></div>
-                                    <div class="text-xs font-semibold uppercase"
-                                         :class="{
-                                             'text-red-300': item.cvss_severity === 'CRITICAL',
-                                             'text-orange-300': item.cvss_severity === 'HIGH',
-                                             'text-yellow-300': item.cvss_severity === 'MEDIUM',
-                                             'text-blue-300': item.cvss_severity === 'LOW'
-                                         }"
-                                         x-text="'CVSS ' + (item.cvss_severity || '')"></div>
-                                    <template x-if="item.cve_count > 0">
-                                        <div class="text-xs text-gray-400 mt-1" x-text="item.cve_count + ' CVE' + (item.cve_count > 1 ? 's' : '')"></div>
-                                    </template>
-                                </div>
-                            </template>
-
-                            <!-- Relevance Score (always shown) -->
-                            <div>
-                                <div class="text-xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
-                                <div class="text-xs text-gray-500">Relevance</div>
-                            </div>
-
-                            <!-- IOC Count -->
-                            <template x-if="item.ioc_count > 0 && !item.cvss_score">
+                            <div class="text-2xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
+                            <div class="text-xs text-gray-500">Relevance</div>
+                            <template x-if="item.ioc_count > 0">
                                 <div class="mt-2">
                                     <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
                                 </div>
@@ -216,17 +156,14 @@
                 <button @click="prevPage()" 
                         :disabled="pagination.page <= 1"
                         :class="pagination.page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'"
-                        class="px-4 py-2 bg-gray-700 rounded transition">Previous</button>
+                        class="px-4 py-2 bg-gray-700 rounded">Previous</button>
                 <button @click="nextPage()" 
                         :disabled="pagination.page >= pagination.pages"
                         :class="pagination.page >= pagination.pages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'"
-                        class="px-4 py-2 bg-gray-700 rounded transition">Next</button>
+                        class="px-4 py-2 bg-gray-700 rounded">Next</button>
             </div>
         </div>
     </div>
-    
-    <!-- MITRE ATT&CK Matrix Modal -->
-    {% include 'mitre_matrix_modal.html' %}
 </div>
 
 <script>
@@ -243,11 +180,9 @@ function dashboard() {
         feeds: [],
         filters: {
             severity: '',
-            source: '',
             hours: '',
             search: ''
         },
-        availableSources: [],
         pagination: {
             page: 1,
             per_page: 20,
@@ -255,49 +190,9 @@ function dashboard() {
             pages: 0
         },
         
-        // MITRE Modal state
-        mitreModal: {
-            show: false,
-            technique: null
-        },
-        
-        // MITRE Matrix data
-        mitreMatrix: {
-            tactics: [
-                'Initial Access',
-                'Execution', 
-                'Persistence',
-                'Privilege Escalation',
-                'Defense Evasion',
-                'Credential Access',
-                'Discovery',
-                'Lateral Movement',
-                'Collection',
-                'Command and Control',
-                'Exfiltration',
-                'Impact'
-            ],
-            techniques: {}
-        },
-        
-        init() {
-            this.loadStats();
-            this.loadSources();
-            this.loadFeeds();
-        },
-
         async loadStats() {
             const response = await fetch('/api/stats');
             this.stats = await response.json();
-        },
-
-        async loadSources() {
-            try {
-                const response = await fetch('/api/sources');
-                this.availableSources = await response.json();
-            } catch (error) {
-                console.error('Failed to load sources:', error);
-            }
         },
         
         async loadFeeds() {
@@ -313,47 +208,6 @@ function dashboard() {
             this.feeds = data.items;
             this.pagination.total = data.total;
             this.pagination.pages = data.pages;
-        },
-        
-        async loadMitreMatrix() {
-            try {
-                const response = await fetch('/api/techniques');
-                this.mitreMatrix.techniques = await response.json();
-            } catch (error) {
-                console.error('Failed to load MITRE matrix:', error);
-            }
-        },
-        
-        getTacticTechniques(tactic) {
-            if (!this.mitreMatrix.techniques[tactic]) return [];
-            return this.mitreMatrix.techniques[tactic].slice(0, 12);
-        },
-        
-        showMitreModal(technique) {
-            this.mitreModal.technique = technique;
-            this.mitreModal.show = true;
-            
-            if (Object.keys(this.mitreMatrix.techniques).length === 0) {
-                this.loadMitreMatrix();
-            }
-        },
-        
-        showMitreMatrix() {
-            this.mitreModal.show = true;
-            
-            if (Object.keys(this.mitreMatrix.techniques).length === 0) {
-                this.loadMitreMatrix();
-            }
-        },
-        
-        viewTechnique(technique) {
-            this.mitreModal.technique = technique;
-        },
-        
-        filterBySeverity(severity) {
-            this.filters.severity = severity;
-            this.pagination.page = 1;
-            this.loadFeeds();
         },
         
         nextPage() {

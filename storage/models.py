@@ -87,7 +87,14 @@ class IOC(Base):
     threat_actor = Column(String(255))
     malware_family = Column(String(255))
     mitre_techniques = Column(Text)
-    
+
+    # CVSS Scoring (from NVD enrichment)
+    cvss_v3_score = Column(Float, index=True)              # 0.0-10.0 base score
+    cvss_v3_severity = Column(String(20))                  # CRITICAL/HIGH/MEDIUM/LOW
+    cvss_v3_vector = Column(String(100))                   # Full CVSS v3 vector string
+    cvss_v2_score = Column(Float)                          # Legacy CVSS v2 (fallback)
+    cvss_v2_severity = Column(String(20))                  # Legacy severity
+
     # Relationships
     feed_item = relationship('FeedItem', back_populates='iocs')
     tags = relationship('Tag', secondary=ioc_tags, back_populates='iocs')

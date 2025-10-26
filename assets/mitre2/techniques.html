@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}MITRE ATT&CK Techniques - APT-ACK{% endblock %}
+
+{% block content %}
+<div x-data="techniquesPage()" x-init="loadTechniques()">
+    <h1 class="text-3xl font-bold mb-6">MITRE ATT&CK Technique Coverage</h1>
+    
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Total Techniques</div>
+            <div class="text-3xl font-bold mt-2" x-text="totalTechniques"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Unique Tactics</div>
+            <div class="text-3xl font-bold mt-2" x-text="Object.keys(techniques).length"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Most Common</div>
+            <div class="text-xl font-bold mt-2" x-text="mostCommon ? mostCommon.id : 'N/A'"></div>
+            <div class="text-xs text-gray-500" x-text="mostCommon ? mostCommon.name : ''"></div>
+        </div>
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Coverage</div>
+            <div class="text-3xl font-bold mt-2" x-text="totalMapped + ' items'"></div>
+        </div>
+    </div>
+    
+    <!-- Technique Matrix by Tactic -->
+    <div class="space-y-6">
+        <template x-for="(tacticTechniques, tactic) in sortedTechniques" :key="tactic">
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold" x-text="tactic"></h2>
+                        <span class="text-sm text-gray-400" x-text="tacticTechniques.length + ' techniques'"></span>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="technique in tacticTechniques" :key="technique.id">
+                            <a :href="'/feeds?technique=' + technique.id.toLowerCase()" 
+                               class="block p-4 bg-gray-750 hover:bg-gray-700 rounded-lg border border-gray-600 transition">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="font-mono text-sm text-blue-400 font-semibold" x-text="technique.id"></div>
+                                        <div class="text-gray-300 mt-1" x-text="technique.name"></div>
+                                    </div>
+                                    <div class="ml-4 text-right">
+                                        <div class="text-2xl font-bold text-blue-400" x-text="technique.count"></div>
+                                        <div class="text-xs text-gray-500">items</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Heat map indicator -->
+                                <div class="mt-3 h-2 bg-gray-600 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full transition-all"
+                                         :style="'width: ' + Math.min((technique.count / maxCount * 100), 100) + '%'"></div>
+                                </div>
+                            </a>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+    
+    <!-- Legend -->
+    <div class="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
+        <h3 class="text-lg font-bold mb-4">About MITRE ATT&CK Techniques</h3>
+        <p class="text-gray-400 mb-4">
+            APT-ACK automatically maps threat intelligence to MITRE ATT&CK techniques based on keywords, 
+            malware families, and attack descriptions. Click any technique to view related threat intel items.
+        </p>
+        <div class="flex items-center space-x-6 text-sm">
+            <div>
+                <span class="text-gray-400">Technique ID:</span>
+                <span class="ml-2 font-mono text-blue-400">T1234</span>
+            </div>
+            <div>
+                <span class="text-gray-400">Count:</span>
+                <span class="ml-2 text-gray-300">Number of related threat intel items</span>
+            </div>
+            <div>
+                <span class="text-gray-400">Bar:</span>
+                <span class="ml-2 text-gray-300">Relative frequency vs most common technique</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function techniquesPage() {
+    return {
+        techniques: {},
+        maxCount: 0,
+        mostCommon: null,
+        totalTechniques: 0,
+        totalMapped: 0,
+        
+        get sortedTechniques() {
+            // Sort tactics in typical kill chain order
+            const tacticsOrder = [
+                'Initial Access',
+                'Execution', 
+                'Persistence',
+                'Privilege Escalation',
+                'Defense Evasion',
+                'Credential Access',
+                'Discovery',
+                'Lateral Movement',
+                'Collection',
+                'Command and Control',
+                'Exfiltration',
+                'Impact',
+                'Multiple'
+            ];
+            
+            const sorted = {};
+            for (const tactic of tacticsOrder) {
+                if (this.techniques[tactic]) {
+                    sorted[tactic] = this.techniques[tactic];
+                }
+            }
+            
+            // Add any remaining tactics not in the order
+            for (const tactic in this.techniques) {
+                if (!sorted[tactic]) {
+                    sorted[tactic] = this.techniques[tactic];
+                }
+            }
+            
+            return sorted;
+        },
+        
+        async loadTechniques() {
+            const response = await fetch('/api/techniques');
+            this.techniques = await response.json();
+            
+            // Calculate stats
+            let allTechniques = [];
+            for (const tactic in this.techniques) {
+                allTechniques = allTechniques.concat(this.techniques[tactic]);
+            }
+            
+            this.totalTechniques = allTechniques.length;
+            
+            if (allTechniques.length > 0) {
+                this.maxCount = Math.max(...allTechniques.map(t => t.count));
+                this.mostCommon = allTechniques.reduce((max, t) => 
+                    t.count > max.count ? t : max
+                );
+                this.totalMapped = allTechniques.reduce((sum, t) => sum + t.count, 0);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -196,15 +196,25 @@ class NVDCollector:
             if description and not ioc.context:
                 ioc.context = description[:500]  # Limit length
             
-            # Store CWE in mitre_techniques field for now
+            # Store CWE in mitre_techniques field
             if cwe_ids:
                 ioc.mitre_techniques = cwe_ids
-            
+
+            # Store CVSS scores
+            if scores['cvss_v3_score']:
+                ioc.cvss_v3_score = scores['cvss_v3_score']
+                ioc.cvss_v3_severity = scores['cvss_v3_severity']
+                ioc.cvss_v3_vector = scores['cvss_v3_vector']
+
+            if scores['cvss_v2_score']:
+                ioc.cvss_v2_score = scores['cvss_v2_score']
+                ioc.cvss_v2_severity = scores['cvss_v2_severity']
+
             # Log enrichment
             cvss_str = f"CVSS v3: {scores['cvss_v3_score']} ({scores['cvss_v3_severity']})" if scores['cvss_v3_score'] else "No CVSS"
             cwe_str = f"CWE: {cwe_ids}" if cwe_ids else "No CWE"
             print(f"  {cvss_str} | {cwe_str}")
-            
+
             session.commit()
             return True
             
