@@ -157,11 +157,18 @@ def get_feeds():
             time_ago = datetime.now(UTC) - timedelta(hours=hours)
             query = query.filter(FeedItem.collected_date >= time_ago)
         
-        # Order by relevance score and date
-        query = query.order_by(
-            FeedItem.relevance_score.desc(),
-            FeedItem.collected_date.desc()
-        )
+        # Sorting - default to chronological (newest first)
+        sort_by = request.args.get('sort', 'date')
+        if sort_by == 'relevance':
+            query = query.order_by(
+                FeedItem.relevance_score.desc(),
+                FeedItem.published_date.desc().nullslast()
+            )
+        else:  # Default: chronological by published_date
+            query = query.order_by(
+                FeedItem.published_date.desc().nullslast(),
+                FeedItem.collected_date.desc()
+            )
         
         # Paginate
         total = query.count()

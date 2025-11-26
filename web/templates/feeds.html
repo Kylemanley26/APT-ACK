@@ -124,6 +124,13 @@
                        class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
             </div>
         </div>
+        <div class="mt-4 flex items-center justify-end">
+            <label class="text-sm text-gray-400 mr-2">Sort by:</label>
+            <select x-model="filters.sort" @change="loadFeeds()" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
+                <option value="date">Newest First</option>
+                <option value="relevance">Relevance Score</option>
+            </select>
+        </div>
     </div>
 
     <!-- Results Count -->
@@ -311,7 +318,8 @@ function feedsPage() {
             hours: '',
             search: '',
             techniques: [],  // Changed to array for multi-technique filtering
-            tag: ''
+            tag: '',
+            sort: 'date'  // Default: chronological (newest first)
         },
         pagination: {
             page: 1,
@@ -358,6 +366,7 @@ function feedsPage() {
             this.filters.source = urlParams.get('source') || '';
             this.filters.hours = urlParams.get('hours') || '';
             this.filters.search = urlParams.get('search') || '';
+            this.filters.sort = urlParams.get('sort') || 'date';
 
             // Load available sources
             this.loadSources();
@@ -530,13 +539,15 @@ function feedsPage() {
         },
 
         clearAllFilters() {
+            const currentSort = this.filters.sort;  // Preserve sort preference
             this.filters = {
                 severity: '',
                 source: '',
                 hours: '',
                 search: '',
                 techniques: [],
-                tag: ''
+                tag: '',
+                sort: currentSort
             };
             this.techniqueNames = {};
             this.pagination.page = 1;
