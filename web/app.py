@@ -131,7 +131,11 @@ def get_feeds():
             query = query.filter(FeedItem.severity == SeverityLevel[severity.upper()])
 
         if tag:
-            query = query.join(FeedItem.tags).filter(Tag.name == tag.lower())
+            # Support multiple tags (comma-separated, AND logic)
+            tags = [t.strip().lower() for t in tag.split(',') if t.strip()]
+            for t in tags:
+                tag_alias = aliased(Tag)
+                query = query.join(tag_alias, FeedItem.tags).filter(tag_alias.name == t)
 
         if techniques:
             # Filter by multiple MITRE techniques (AND logic - must have ALL)
@@ -572,6 +576,11 @@ def get_timeline():
 def cve_page(cve_id):
         """CVE detail page"""
         return render_template('cve_detail.html', cve_id=cve_id)
+
+@app.route('/feed/<int:feed_id>')
+def feed_page(feed_id):
+    """Feed item detail page"""
+    return render_template('feed_detail.html', feed_id=feed_id)
 
 @app.route('/ioc/<ioc_type>/<path:value>')
 def ioc_page(ioc_type, value):

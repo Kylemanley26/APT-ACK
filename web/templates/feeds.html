@@ -27,11 +27,11 @@
                     </div>
                 </template>
 
-                <!-- Tag Filter -->
-                <template x-if="filters.tag">
+                <!-- Tag Filters (Multiple) -->
+                <template x-for="tagName in filters.tags" :key="tagName">
                     <div class="flex items-center space-x-2 bg-gray-700 px-3 py-1 rounded">
-                        <span class="text-gray-200 text-sm" x-text="'Tag: ' + filters.tag"></span>
-                        <button @click="clearTag()" class="text-gray-300 hover:text-white">
+                        <span class="text-gray-200 text-sm" x-text="tagName"></span>
+                        <button @click="removeTag(tagName)" class="text-gray-300 hover:text-white">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -212,7 +212,7 @@
                                     <template x-for="tag in item.tags" :key="tag.name">
                                         <button @click="filterByTag(tag.name)"
                                            class="px-2 py-1 text-xs rounded transition"
-                                           :class="filters.tag === tag.name 
+                                           :class="filters.tags.includes(tag.name.toLowerCase()) 
                                                    ? 'bg-gray-600 text-gray-100 ring-2 ring-gray-400' 
                                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
                                            x-text="tag.name"></button>
@@ -242,7 +242,7 @@
                                          }"
                                          x-text="'CVSS ' + (item.cvss_severity || '')"></div>
                                     <template x-if="item.cve_count > 0">
-                                        <div class="text-xs text-gray-400 mt-1" x-text="item.cve_count + ' CVE' + (item.cve_count > 1 ? 's' : '')"></div>
+                                        <a :href="'/feed/' + item.id" class="text-xs text-gray-400 mt-1 block hover:text-gray-300 hover:underline" x-text="item.cve_count + ' CVE' + (item.cve_count > 1 ? 's' : '')"></a>
                                     </template>
                                 </div>
                             </template>
@@ -256,7 +256,7 @@
                             <!-- IOC Count -->
                             <template x-if="item.ioc_count > 0 && !item.cvss_score">
                                 <div class="mt-2">
-                                    <span class="text-sm text-yellow-400" x-text="item.ioc_count + ' IOCs'"></span>
+                                    <a :href="'/feed/' + item.id" class="text-sm text-yellow-400 hover:text-yellow-300 hover:underline" x-text="item.ioc_count + ' IOCs'"></a>
                                 </div>
                             </template>
                         </div>
@@ -317,9 +317,9 @@ function feedsPage() {
             source: '',
             hours: '',
             search: '',
-            techniques: [],  // Changed to array for multi-technique filtering
-            tag: '',
-            sort: 'date'  // Default: chronological (newest first)
+            techniques: [],  // Array for multi-technique filtering (AND logic)
+            tags: [],        // Array for multi-tag filtering (AND logic)
+            sort: 'date'     // Default: chronological (newest first)
         },
         pagination: {
             page: 1,
@@ -361,7 +361,8 @@ function feedsPage() {
             const urlParams = new URLSearchParams(window.location.search);
             const techniqueParam = urlParams.get('technique') || '';
             this.filters.techniques = techniqueParam ? techniqueParam.split(',').map(t => t.trim().toLowerCase()).filter(t => t) : [];
-            this.filters.tag = urlParams.get('tag') || '';
+            const tagParam = urlParams.get('tag') || '';
+            this.filters.tags = tagParam ? tagParam.split(',').map(t => t.trim().toLowerCase()).filter(t => t) : [];
             this.filters.severity = urlParams.get('severity') || '';
             this.filters.source = urlParams.get('source') || '';
             this.filters.hours = urlParams.get('hours') || '';
@@ -395,11 +396,13 @@ function feedsPage() {
                 per_page: this.pagination.per_page
             });
 
-            // Add filters, handling techniques array specially
+            // Add filters, handling techniques and tags arrays specially
             Object.entries(this.filters).forEach(([key, value]) => {
                 if (key === 'techniques' && value.length > 0) {
                     params.set('technique', value.join(','));
-                } else if (value && key !== 'techniques') {
+                } else if (key === 'tags' && value.length > 0) {
+                    params.set('tag', value.join(','));
+                } else if (value && key !== 'techniques' && key !== 'tags') {
                     params.set(key, value);
                 }
             });
@@ -474,7 +477,27 @@ function feedsPage() {
         },
 
         filterByTag(tagName) {
-            this.filters.tag = tagName;
+            const tag = tagName.toLowerCase();
+            // Add tag if not already in filter (additive)
+            if (!this.filters.tags.includes(tag)) {
+                this.filters.tags.push(tag);
+                this.pagination.page = 1;
+                this.updateURL();
+                this.loadFeeds();
+            }
+        },
+
+        removeTag(tagName) {
+            // Remove a specific tag from filter
+            this.filters.tags = this.filters.tags.filter(t => t !== tagName);
+            this.pagination.page = 1;
+            this.updateURL();
+            this.loadFeeds();
+        },
+
+        clearTags() {
+            // Clear all tag filters
+            this.filters.tags = [];
             this.pagination.page = 1;
             this.updateURL();
             this.loadFeeds();
@@ -502,19 +525,12 @@ function feedsPage() {
         },
 
         clearTechniques() {
-            // Clear all technique filters
-            this.filters.techniques = [];
-            this.techniqueNames = {};
-            this.pagination.page = 1;
-            this.updateURL();
-            this.loadFeeds();
-        },
-        
-        clearTag() {
-            this.filters.tag = '';
-            this.pagination.page = 1;
-            this.updateURL();
-            this.loadFeeds();
+        // Clear all technique filters
+        this.filters.techniques = [];
+        this.techniqueNames = {};
+        this.pagination.page = 1;
+        this.updateURL();
+        this.loadFeeds();
         },
         
         clearSeverity() {
@@ -546,7 +562,7 @@ function feedsPage() {
                 hours: '',
                 search: '',
                 techniques: [],
-                tag: '',
+                tags: [],
                 sort: currentSort
             };
             this.techniqueNames = {};
@@ -556,7 +572,7 @@ function feedsPage() {
         },
 
         hasActiveFilters() {
-            return this.filters.techniques.length > 0 || this.filters.tag || this.filters.severity || this.filters.hours;
+            return this.filters.techniques.length > 0 || this.filters.tags.length > 0 || this.filters.severity || this.filters.hours || this.filters.source;
         },
         
         getTimeframeLabel() {
@@ -573,7 +589,9 @@ function feedsPage() {
             Object.entries(this.filters).forEach(([key, value]) => {
                 if (key === 'techniques' && value.length > 0) {
                     params.set('technique', value.join(','));
-                } else if (value && key !== 'techniques') {
+                } else if (key === 'tags' && value.length > 0) {
+                    params.set('tag', value.join(','));
+                } else if (value && key !== 'techniques' && key !== 'tags') {
                     params.set(key, value);
                 }
             });
