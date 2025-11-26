@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}IOC Detail - APT-ACK{% endblock %}
+{% block title_suffix %} | IOC{% endblock %}
 
 {% block content %}
 <div x-data="iocDetail()" x-init="loadIOC()">
     <div class="mb-6">
-        <a href="/feeds" class="text-blue-400 hover:text-blue-300">&larr; Back to Feeds</a>
+        <a href="/feeds" class="text-blue-400 hover:text-blue-300">&larr; Back to Analysis</a>
     </div>
     
     <template x-if="loading">

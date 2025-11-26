@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Feed Detail - APT-ACK{% endblock %}
+{% block title_suffix %} | Feed{% endblock %}
 
 {% block content %}
 <div x-data="feedDetail()" x-init="loadFeed()">
     <div class="mb-6">
-        <a href="/feeds" class="text-blue-400 hover:text-blue-300">&larr; Back to Feeds</a>
+        <a href="/feeds" class="text-blue-400 hover:text-blue-300">&larr; Back to Analysis</a>
     </div>
     
     <template x-if="loading">

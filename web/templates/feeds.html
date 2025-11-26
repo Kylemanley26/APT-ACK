@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Threat Intel Feeds - APT-ACK{% endblock %}
+{% block title_suffix %} | Analysis{% endblock %}
 
 {% block content %}
 <div x-data="feedsPage()" x-init="init()">
-    <h1 class="text-3xl font-bold mb-6">Threat Intelligence Feeds</h1>
+    <h1 class="text-3xl font-bold mb-6">Threat Intelligence Analysis</h1>
     
     <!-- Active Filters Banner -->
     <div x-show="hasActiveFilters()" class="bg-blue-900 border border-blue-700 rounded-lg p-4 mb-6">

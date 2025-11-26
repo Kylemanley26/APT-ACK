@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title_suffix %} | News Feed{% endblock %}
+
 {% block content %}
 <div x-data="dashboard()" x-init="init()">
     <!-- Stats Overview -->
@@ -52,53 +54,11 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Severity</label>
-                <select x-model="filters.severity" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All</option>
-                    <option value="critical">Critical</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                    <option value="info">Info</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Source</label>
-                <select x-model="filters.source" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All Sources</option>
-                    <template x-for="src in availableSources" :key="src.name">
-                        <option :value="src.name" x-text="src.name + ' (' + src.count + ')'"></option>
-                    </template>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Timeframe</label>
-                <select x-model="filters.hours" @change="loadFeeds()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <option value="">All time</option>
-                    <option value="24">Last 24 hours</option>
-                    <option value="72">Last 3 days</option>
-                    <option value="168">Last week</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Search</label>
-                <input type="text"
-                       x-model="filters.search"
-                       @keyup.debounce.500ms="loadFeeds()"
-                       placeholder="Search titles and content..."
-                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
-            </div>
-        </div>
-    </div>
 
     <!-- Feed Items -->
     <div class="bg-gray-800 rounded-lg border border-gray-700">
         <div class="p-6 border-b border-gray-700 flex items-center justify-between">
-            <h2 class="text-xl font-bold">Latest Threat Intelligence</h2>
+            <h2 class="text-xl font-bold">News Feed</h2>
             <button @click="showMitreMatrix()" class="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
@@ -242,12 +202,8 @@ function dashboard() {
         },
         feeds: [],
         filters: {
-            severity: '',
-            source: '',
-            hours: '',
-            search: ''
+            severity: ''
         },
-        availableSources: [],
         pagination: {
             page: 1,
             per_page: 20,
@@ -282,22 +238,12 @@ function dashboard() {
         
         init() {
             this.loadStats();
-            this.loadSources();
             this.loadFeeds();
         },
 
         async loadStats() {
             const response = await fetch('/api/stats');
             this.stats = await response.json();
-        },
-
-        async loadSources() {
-            try {
-                const response = await fetch('/api/sources');
-                this.availableSources = await response.json();
-            } catch (error) {
-                console.error('Failed to load sources:', error);
-            }
         },
         
         async loadFeeds() {

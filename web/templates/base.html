@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}APT-ACK{% endblock %}</title>
+    <title>IRL | APT-ACK{% block title_suffix %}{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://irl.expert/images/d20-favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://irl.expert/images/d20-favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://irl.expert/images/d20-favicon.png">
+    
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Vibur">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -257,8 +263,8 @@
                     <span class="neon-subtitle">By IRL</span>
                 </div>
                 <div class="flex space-x-4">
-                    <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
-                    <a href="/feeds" class="text-white px-3 py-2 rounded-md text-sm font-medium">Feeds</a>
+                    <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium">News Feed</a>
+                    <a href="/feeds" class="text-white px-3 py-2 rounded-md text-sm font-medium">Analysis</a>
                     <a href="/techniques" class="text-white px-3 py-2 rounded-md text-sm font-medium">Techniques</a>
                     <a href="/timeline" class="text-white px-3 py-2 rounded-md text-sm font-medium">Timeline</a>
                 </div>
