@@ -9,3 +9,4 @@ config/secrets.yaml
 .DS_Store
 scripts/*.db
 exports/
+data/mitre/*.json

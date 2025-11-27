@@ -1,12 +1,57 @@
+"""
+MITRE ATT&CK Mapper for APT-ACK
+
+Maps feed items to MITRE ATT&CK techniques using:
+1. Dynamic STIX data from official MITRE feed (primary)
+2. Fallback hardcoded patterns (if STIX unavailable)
+3. Malware family to technique associations
+"""
+
 import re
-import json
-from pathlib import Path
 from storage.database import db
 from storage.models import FeedItem, IOC, Tag
 
+# Try to import STIX loader, fall back gracefully
+try:
+    from enrichment.mitre_stix_loader import get_mitre_loader, MitreStixLoader
+    STIX_AVAILABLE = True
+except ImportError:
+    STIX_AVAILABLE = False
+    print("Warning: MITRE STIX loader not available, using hardcoded patterns")
+
+
 class MitreAttackMapper:
     def __init__(self):
-        # Technique mappings - keyword/pattern to MITRE technique
+        self.stix_loader = None
+        
+        # Try to load STIX data
+        if STIX_AVAILABLE:
+            try:
+                self.stix_loader = get_mitre_loader()
+                if self.stix_loader.techniques:
+                    print(f"MITRE ATT&CK: Loaded {len(self.stix_loader.techniques)} techniques from STIX")
+                    self._init_from_stix()
+                    return
+            except Exception as e:
+                print(f"Warning: Failed to load STIX data: {e}")
+        
+        # Fallback to hardcoded patterns
+        print("MITRE ATT&CK: Using hardcoded technique patterns")
+        self._init_hardcoded()
+    
+    def _init_from_stix(self):
+        """Initialize from STIX data"""
+        self.technique_patterns = self.stix_loader.get_technique_patterns()
+        self.technique_metadata = self.stix_loader.get_technique_metadata()
+        
+        # Add custom patterns that STIX descriptions might miss
+        self._add_custom_patterns()
+        
+        # Malware mappings (not in STIX, maintain separately)
+        self._init_malware_techniques()
+    
+    def _init_hardcoded(self):
+        """Fallback hardcoded patterns if STIX unavailable"""
         self.technique_patterns = {
             # Reconnaissance
             'T1595': ['active scanning', 'vulnerability scanning', 'scanning target'],
@@ -52,7 +97,6 @@ class MitreAttackMapper:
             
             # Privilege Escalation
             'T1068': ['privilege escalation', 'elevation of privilege', 'local privilege'],
-            'T1078': ['valid accounts', 'privileged account'],
             'T1548': ['abuse elevation control', 'sudo', 'uac bypass'],
             
             # Defense Evasion
@@ -116,7 +160,6 @@ class MitreAttackMapper:
             'T1657': ['financial theft']
         }
         
-        # Technique metadata (name and tactic)
         self.technique_metadata = {
             # Reconnaissance
             'T1595': {'name': 'Active Scanning', 'tactic': 'Reconnaissance'},
@@ -143,20 +186,28 @@ class MitreAttackMapper:
             'T1566': {'name': 'Phishing', 'tactic': 'Initial Access'},
             'T1190': {'name': 'Exploit Public-Facing Application', 'tactic': 'Initial Access'},
             'T1133': {'name': 'External Remote Services', 'tactic': 'Initial Access'},
-            'T1078': {'name': 'Valid Accounts', 'tactic': 'Initial Access'},  # Also: Persistence, Priv Esc, Defense Evasion
+            'T1078': {'name': 'Valid Accounts', 'tactic': 'Initial Access'},
             'T1195': {'name': 'Supply Chain Compromise', 'tactic': 'Initial Access'},
+            
+            # Execution
             'T1059': {'name': 'Command and Scripting Interpreter', 'tactic': 'Execution'},
             'T1203': {'name': 'Exploitation for Client Execution', 'tactic': 'Execution'},
             'T1204': {'name': 'User Execution', 'tactic': 'Execution'},
             'T1047': {'name': 'Windows Management Instrumentation', 'tactic': 'Execution'},
             'T1053': {'name': 'Scheduled Task/Job', 'tactic': 'Execution'},
+            
+            # Persistence
             'T1547': {'name': 'Boot or Logon Autostart Execution', 'tactic': 'Persistence'},
             'T1543': {'name': 'Create or Modify System Process', 'tactic': 'Persistence'},
             'T1136': {'name': 'Create Account', 'tactic': 'Persistence'},
             'T1098': {'name': 'Account Manipulation', 'tactic': 'Persistence'},
             'T1505': {'name': 'Server Software Component', 'tactic': 'Persistence'},
+            
+            # Privilege Escalation
             'T1068': {'name': 'Exploitation for Privilege Escalation', 'tactic': 'Privilege Escalation'},
             'T1548': {'name': 'Abuse Elevation Control Mechanism', 'tactic': 'Privilege Escalation'},
+            
+            # Defense Evasion
             'T1070': {'name': 'Indicator Removal', 'tactic': 'Defense Evasion'},
             'T1027': {'name': 'Obfuscated Files or Information', 'tactic': 'Defense Evasion'},
             'T1562': {'name': 'Impair Defenses', 'tactic': 'Defense Evasion'},
@@ -164,36 +215,50 @@ class MitreAttackMapper:
             'T1112': {'name': 'Modify Registry', 'tactic': 'Defense Evasion'},
             'T1036': {'name': 'Masquerading', 'tactic': 'Defense Evasion'},
             'T1218': {'name': 'System Binary Proxy Execution', 'tactic': 'Defense Evasion'},
+            
+            # Credential Access
             'T1110': {'name': 'Brute Force', 'tactic': 'Credential Access'},
             'T1003': {'name': 'OS Credential Dumping', 'tactic': 'Credential Access'},
             'T1056': {'name': 'Input Capture', 'tactic': 'Credential Access'},
             'T1555': {'name': 'Credentials from Password Stores', 'tactic': 'Credential Access'},
             'T1212': {'name': 'Exploitation for Credential Access', 'tactic': 'Credential Access'},
+            
+            # Discovery
             'T1083': {'name': 'File and Directory Discovery', 'tactic': 'Discovery'},
             'T1087': {'name': 'Account Discovery', 'tactic': 'Discovery'},
             'T1018': {'name': 'Remote System Discovery', 'tactic': 'Discovery'},
             'T1046': {'name': 'Network Service Discovery', 'tactic': 'Discovery'},
             'T1057': {'name': 'Process Discovery', 'tactic': 'Discovery'},
             'T1082': {'name': 'System Information Discovery', 'tactic': 'Discovery'},
+            
+            # Lateral Movement
             'T1021': {'name': 'Remote Services', 'tactic': 'Lateral Movement'},
             'T1080': {'name': 'Taint Shared Content', 'tactic': 'Lateral Movement'},
             'T1570': {'name': 'Lateral Tool Transfer', 'tactic': 'Lateral Movement'},
+            
+            # Collection
             'T1005': {'name': 'Data from Local System', 'tactic': 'Collection'},
             'T1039': {'name': 'Data from Network Shared Drive', 'tactic': 'Collection'},
             'T1114': {'name': 'Email Collection', 'tactic': 'Collection'},
             'T1113': {'name': 'Screen Capture', 'tactic': 'Collection'},
             'T1115': {'name': 'Clipboard Data', 'tactic': 'Collection'},
+            
+            # Command and Control
             'T1071': {'name': 'Application Layer Protocol', 'tactic': 'Command and Control'},
             'T1568': {'name': 'Dynamic Resolution', 'tactic': 'Command and Control'},
             'T1573': {'name': 'Encrypted Channel', 'tactic': 'Command and Control'},
             'T1090': {'name': 'Proxy', 'tactic': 'Command and Control'},
             'T1095': {'name': 'Non-Application Layer Protocol', 'tactic': 'Command and Control'},
             'T1219': {'name': 'Remote Access Software', 'tactic': 'Command and Control'},
+            
+            # Exfiltration
             'T1020': {'name': 'Automated Exfiltration', 'tactic': 'Exfiltration'},
             'T1030': {'name': 'Data Transfer Size Limits', 'tactic': 'Exfiltration'},
             'T1048': {'name': 'Exfiltration Over Alternative Protocol', 'tactic': 'Exfiltration'},
             'T1041': {'name': 'Exfiltration Over C2 Channel', 'tactic': 'Exfiltration'},
             'T1567': {'name': 'Exfiltration Over Web Service', 'tactic': 'Exfiltration'},
+            
+            # Impact
             'T1485': {'name': 'Data Destruction', 'tactic': 'Impact'},
             'T1486': {'name': 'Data Encrypted for Impact', 'tactic': 'Impact'},
             'T1490': {'name': 'Inhibit System Recovery', 'tactic': 'Impact'},
@@ -203,7 +268,30 @@ class MitreAttackMapper:
             'T1657': {'name': 'Financial Theft', 'tactic': 'Impact'}
         }
         
-        # Malware to technique mappings (common TTPs)
+        self._init_malware_techniques()
+    
+    def _add_custom_patterns(self):
+        """Add custom detection patterns that STIX might miss"""
+        custom_patterns = {
+            # Common security terms that map to techniques
+            'T1566': ['phishing email', 'malspam', 'spearphish'],
+            'T1059': ['powershell', 'cmd.exe', 'bash', 'python script', 'vbscript'],
+            'T1486': ['ransomware', 'encrypt files', 'ransom note', 'data encrypted'],
+            'T1003': ['mimikatz', 'credential dump', 'lsass', 'password hash'],
+            'T1055': ['process injection', 'dll injection', 'code injection', 'hollowing'],
+            'T1071': ['c2', 'c&c', 'command and control', 'beacon'],
+            'T1078': ['stolen credentials', 'valid accounts', 'compromised account'],
+            'T1190': ['exploit', 'cve-', 'vulnerability', 'rce'],
+        }
+        
+        for tech_id, patterns in custom_patterns.items():
+            if tech_id in self.technique_patterns:
+                self.technique_patterns[tech_id].extend(patterns)
+            else:
+                self.technique_patterns[tech_id] = patterns
+    
+    def _init_malware_techniques(self):
+        """Initialize malware to technique mappings"""
         self.malware_techniques = {
             'ransomware': ['T1486', 'T1490', 'T1082', 'T1047'],
             'qakbot': ['T1566', 'T1059', 'T1055', 'T1003'],
@@ -214,7 +302,11 @@ class MitreAttackMapper:
             'stealer': ['T1555', 'T1056', 'T1113', 'T1005'],
             'wiper': ['T1485', 'T1490'],
             'keylogger': ['T1056'],
-            'rat': ['T1219', 'T1071', 'T1113']
+            'rat': ['T1219', 'T1071', 'T1113'],
+            'loader': ['T1204', 'T1059', 'T1547'],
+            'botnet': ['T1071', 'T1568', 'T1059'],
+            'rootkit': ['T1014', 'T1547', 'T1562'],
+            'infostealer': ['T1555', 'T1005', 'T1056', 'T1113']
         }
     
     def detect_techniques(self, text):
@@ -266,21 +358,20 @@ class MitreAttackMapper:
             
             # Create technique tags
             for technique_id in all_techniques:
-                if technique_id in self.technique_metadata:
-                    metadata = self.technique_metadata[technique_id]
-                    tag_name = f"mitre-{technique_id.lower()}"
-                    
-                    tag = session.query(Tag).filter_by(name=tag_name).first()
-                    if not tag:
-                        tag = Tag(
-                            name=tag_name,
-                            category='mitre_technique',
-                            auto_generated=True
-                        )
-                        session.add(tag)
-                    
-                    if tag not in feed_item.tags:
-                        feed_item.tags.append(tag)
+                metadata = self.get_technique_info(technique_id)
+                tag_name = f"mitre-{technique_id.lower()}"
+                
+                tag = session.query(Tag).filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(
+                        name=tag_name,
+                        category='mitre_technique',
+                        auto_generated=True
+                    )
+                    session.add(tag)
+                
+                if tag not in feed_item.tags:
+                    feed_item.tags.append(tag)
             
             # Store technique IDs in IOCs if applicable
             for ioc in feed_item.iocs:
@@ -332,6 +423,16 @@ class MitreAttackMapper:
     
     def get_technique_info(self, technique_id):
         """Get metadata for a technique"""
+        # Try STIX loader first
+        if self.stix_loader and technique_id in self.stix_loader.techniques:
+            t = self.stix_loader.techniques[technique_id]
+            return {
+                'name': t['name'],
+                'tactic': t['tactic'],
+                'url': t.get('url', f'https://attack.mitre.org/techniques/{technique_id}/')
+            }
+        
+        # Fallback to hardcoded
         return self.technique_metadata.get(technique_id, {
             'name': technique_id,
             'tactic': 'Unknown'
@@ -361,3 +462,34 @@ class MitreAttackMapper:
             
         finally:
             session.close()
+    
+    def get_all_tactics(self):
+        """Get ordered list of all tactics"""
+        if self.stix_loader:
+            return self.stix_loader.get_all_tactics()
+        
+        return [
+            'Reconnaissance', 'Resource Development', 'Initial Access', 'Execution',
+            'Persistence', 'Privilege Escalation', 'Defense Evasion', 'Credential Access',
+            'Discovery', 'Lateral Movement', 'Collection', 'Command and Control',
+            'Exfiltration', 'Impact'
+        ]
+    
+    def get_techniques_for_api(self):
+        """Get techniques grouped by tactic for API endpoint"""
+        if self.stix_loader:
+            return self.stix_loader.export_for_api()
+        
+        # Fallback: group hardcoded techniques by tactic
+        by_tactic = {tactic: [] for tactic in self.get_all_tactics()}
+        
+        for tech_id, metadata in self.technique_metadata.items():
+            tactic = metadata.get('tactic', 'Unknown')
+            if tactic in by_tactic:
+                by_tactic[tactic].append({
+                    'id': tech_id,
+                    'name': metadata['name'],
+                    'tactic': tactic
+                })
+        
+        return by_tactic

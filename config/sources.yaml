@@ -56,12 +56,6 @@ rss_feeds:
   - name: "Huntress Labs"
     url: "https://www.huntress.com/blog/rss.xml"
 
-  # VX-Underground via GitHub
-  - name: "VX-Underground Papers"
-    url: "https://github.com/vxunderground/VXUG-Papers/commits/main.atom"
-  - name: "VX-Underground Malware"
-    url: "https://github.com/vxunderground/MalwareSourceCode/commits/main.atom"
-
   # Abuse.ch (Excellent IOC sources)
   - name: "Malware Bazaar"
     url: "https://bazaar.abuse.ch/export/rss/"

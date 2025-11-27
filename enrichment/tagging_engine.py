@@ -311,7 +311,7 @@ class ThreatTagger:
             'cyber berkut', 'cyber caliphate army', 'islamic state hacking division',
             'cca', 'united cyber caliphate', 'uuc', 'cybercaliphate',
             'cyber fighters of izz ad-din al qassam', 'fraternal jackal',
-            'deadeye jackal', 'syrianelectronicarmy', 'sea', 'syrian electronic army',
+            'deadeye jackal', 'syrianelectronicarmy', 'syrian electronic army',
             'corsair jackal', 'tunisiancyberarmy', 'ghost jackal', 'ourmine',
             
             # ========================================
@@ -458,7 +458,7 @@ class ThreatTagger:
             
             # Manufacturing & Industrial
             'manufacturing', 'industrial', 'automotive', 'semiconductor',
-            'factory', 'plant', 'ics', 'scada', 'ot', 'plc',
+            'factory', 'plant', 'ics', 'scada', 'plc',
             'operational technology', 'industrial control',
             
             # Transportation & Logistics
@@ -473,7 +473,7 @@ class ThreatTagger:
             'critical infrastructure', 'cisa', 'national security',
             
             # Defense & Aerospace
-            'defense', 'military', 'aerospace', 'contractor', 'dod',
+            'defense', 'military', 'aerospace', 'contractor',
             'pentagon', 'nato', 'armed forces',
             
             # Legal & Professional Services
@@ -562,7 +562,7 @@ class ThreatTagger:
         self.tools = {
             # Network tools
             'nmap', 'masscan', 'shodan', 'censys', 'wireshark', 'tcpdump',
-            'netcat', 'nc', 'socat', 'hping', 'scapy',
+            'netcat', 'socat', 'hping', 'scapy',
             
             # Exploitation frameworks
             'metasploit', 'cobalt strike', 'burp suite', 'sqlmap', 'nikto',
@@ -595,7 +595,7 @@ class ThreatTagger:
             'wearable', 'medical device', 'pacemaker', 'insulin pump',
             'scada', 'plc', 'hmi', 'rtu', 'ics', 'industrial control',
             'modbus', 'dnp3', 'bacnet', 'opc',
-            'zigbee', 'zwave', 'bluetooth', 'ble', 'lora', 'mqtt',
+            'zigbee', 'zwave', 'bluetooth', 'lora', 'mqtt',
             'raspberry pi', 'arduino', 'esp32', 'esp8266'
         }
         
@@ -628,7 +628,7 @@ class ThreatTagger:
             'jaguar', 'land rover', 'jaguar land rover',
             
             # Other major corps
-            'disney', 'hulu', 'sony', 'nintendo', 'ea', 'activision',
+            'disney', 'hulu', 'sony', 'nintendo', 'activision',
             'boeing', 'lockheed', 'raytheon', 'northrop',
             'exxon', 'chevron', 'shell', 'bp',
             'fedex', 'ups', 'dhl', 'usps',
