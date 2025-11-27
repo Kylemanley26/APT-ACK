@@ -8,6 +8,27 @@ class MitreAttackMapper:
     def __init__(self):
         # Technique mappings - keyword/pattern to MITRE technique
         self.technique_patterns = {
+            # Reconnaissance
+            'T1595': ['active scanning', 'vulnerability scanning', 'scanning target'],
+            'T1592': ['gather victim host', 'host reconnaissance', 'fingerprinting'],
+            'T1589': ['gather victim identity', 'employee names', 'email harvesting'],
+            'T1590': ['gather victim network', 'network topology', 'ip ranges'],
+            'T1591': ['gather victim org', 'business relationships', 'org structure'],
+            'T1598': ['phishing for information', 'spearphishing for recon'],
+            'T1597': ['search closed sources', 'dark web', 'underground forums'],
+            'T1596': ['search open technical', 'shodan', 'censys'],
+            'T1593': ['search open websites', 'linkedin recon', 'social media recon'],
+            'T1594': ['search victim-owned', 'career pages', 'partner pages'],
+            
+            # Resource Development
+            'T1583': ['acquire infrastructure', 'buy domain', 'rent server', 'purchase vps'],
+            'T1586': ['compromise accounts', 'hijacked accounts', 'stolen social media'],
+            'T1584': ['compromise infrastructure', 'compromised server', 'hacked server'],
+            'T1587': ['develop capabilities', 'custom malware', 'develop exploit'],
+            'T1585': ['establish accounts', 'fake accounts', 'persona creation'],
+            'T1588': ['obtain capabilities', 'purchase malware', 'acquire tools'],
+            'T1608': ['stage capabilities', 'upload malware', 'host payload'],
+            
             # Initial Access
             'T1566': ['phishing', 'spear phishing', 'malicious attachment', 'email attachment'],
             'T1190': ['exploit public-facing', 'web server exploit', 'exposed service'],
@@ -97,10 +118,32 @@ class MitreAttackMapper:
         
         # Technique metadata (name and tactic)
         self.technique_metadata = {
+            # Reconnaissance
+            'T1595': {'name': 'Active Scanning', 'tactic': 'Reconnaissance'},
+            'T1592': {'name': 'Gather Victim Host Information', 'tactic': 'Reconnaissance'},
+            'T1589': {'name': 'Gather Victim Identity Information', 'tactic': 'Reconnaissance'},
+            'T1590': {'name': 'Gather Victim Network Information', 'tactic': 'Reconnaissance'},
+            'T1591': {'name': 'Gather Victim Org Information', 'tactic': 'Reconnaissance'},
+            'T1598': {'name': 'Phishing for Information', 'tactic': 'Reconnaissance'},
+            'T1597': {'name': 'Search Closed Sources', 'tactic': 'Reconnaissance'},
+            'T1596': {'name': 'Search Open Technical Databases', 'tactic': 'Reconnaissance'},
+            'T1593': {'name': 'Search Open Websites/Domains', 'tactic': 'Reconnaissance'},
+            'T1594': {'name': 'Search Victim-Owned Websites', 'tactic': 'Reconnaissance'},
+            
+            # Resource Development
+            'T1583': {'name': 'Acquire Infrastructure', 'tactic': 'Resource Development'},
+            'T1586': {'name': 'Compromise Accounts', 'tactic': 'Resource Development'},
+            'T1584': {'name': 'Compromise Infrastructure', 'tactic': 'Resource Development'},
+            'T1587': {'name': 'Develop Capabilities', 'tactic': 'Resource Development'},
+            'T1585': {'name': 'Establish Accounts', 'tactic': 'Resource Development'},
+            'T1588': {'name': 'Obtain Capabilities', 'tactic': 'Resource Development'},
+            'T1608': {'name': 'Stage Capabilities', 'tactic': 'Resource Development'},
+            
+            # Initial Access
             'T1566': {'name': 'Phishing', 'tactic': 'Initial Access'},
             'T1190': {'name': 'Exploit Public-Facing Application', 'tactic': 'Initial Access'},
             'T1133': {'name': 'External Remote Services', 'tactic': 'Initial Access'},
-            'T1078': {'name': 'Valid Accounts', 'tactic': 'Multiple'},
+            'T1078': {'name': 'Valid Accounts', 'tactic': 'Initial Access'},  # Also: Persistence, Priv Esc, Defense Evasion
             'T1195': {'name': 'Supply Chain Compromise', 'tactic': 'Initial Access'},
             'T1059': {'name': 'Command and Scripting Interpreter', 'tactic': 'Execution'},
             'T1203': {'name': 'Exploitation for Client Execution', 'tactic': 'Execution'},

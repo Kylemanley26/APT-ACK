@@ -149,11 +149,6 @@
                                 </div>
                             </template>
 
-                            <!-- Relevance Score (always shown) -->
-                            <div>
-                                <div class="text-xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
-                                <div class="text-xs text-gray-500">Relevance</div>
-                            </div>
 
                             <!-- IOC Count -->
                             <template x-if="item.ioc_count > 0 && !item.cvss_score">
@@ -321,6 +316,9 @@ function dashboard() {
             const date = new Date(dateStr);
             const now = new Date();
             const diff = Math.floor((now - date) / 1000);
+            
+            // Handle future dates (timezone skew)
+            if (diff < 0) return 'Just now';
             
             if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
             if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;

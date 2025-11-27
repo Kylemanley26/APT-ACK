@@ -128,7 +128,9 @@
             <label class="text-sm text-gray-400 mr-2">Sort by:</label>
             <select x-model="filters.sort" @change="loadFeeds()" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
                 <option value="date">Newest First</option>
-                <option value="relevance">Relevance Score</option>
+                <option value="actionability">Actionability</option>
+                <option value="cvss">CVSS Score</option>
+                <option value="ioc_count">IOC Count</option>
             </select>
         </div>
     </div>
@@ -193,8 +195,8 @@
                                                     <div class="font-semibold" x-text="technique.name"></div>
                                                     <div class="text-gray-400 text-xs" x-text="technique.tactic"></div>
                                                     <div class="text-gray-500 text-xs mt-1">
-                                                        <span x-show="!filters.techniques.includes(technique.id.toLowerCase())">Click to add filter</span>
-                                                        <span x-show="filters.techniques.includes(technique.id.toLowerCase())">Already filtered</span>
+                                                        <span x-show="!filters.techniques.includes(technique.id.toLowerCase())">Click to filter</span>
+                                                        <span x-show="filters.techniques.includes(technique.id.toLowerCase())">Click to remove filter</span>
                                                     </div>
                                                     <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                                                         <div class="border-4 border-transparent border-t-gray-900"></div>
@@ -247,10 +249,10 @@
                                 </div>
                             </template>
 
-                            <!-- Relevance Score (always shown) -->
+                            <!-- Actionability Score (always shown) -->
                             <div>
-                                <div class="text-xl font-bold text-blue-400" x-text="item.relevance_score.toFixed(2)"></div>
-                                <div class="text-xs text-gray-500">Relevance</div>
+                                <div class="text-xl font-bold text-blue-400" x-text="item.actionability_score.toFixed(1)"></div>
+                                <div class="text-xs text-gray-500">Actionability</div>
                             </div>
 
                             <!-- IOC Count -->
@@ -340,6 +342,8 @@ function feedsPage() {
         // MITRE Matrix data
         mitreMatrix: {
             tactics: [
+                'Reconnaissance',
+                'Resource Development',
                 'Initial Access',
                 'Execution', 
                 'Persistence',
@@ -478,13 +482,15 @@ function feedsPage() {
 
         filterByTag(tagName) {
             const tag = tagName.toLowerCase();
-            // Add tag if not already in filter (additive)
-            if (!this.filters.tags.includes(tag)) {
+            // Toggle tag filter
+            if (this.filters.tags.includes(tag)) {
+                this.filters.tags = this.filters.tags.filter(t => t !== tag);
+            } else {
                 this.filters.tags.push(tag);
-                this.pagination.page = 1;
-                this.updateURL();
-                this.loadFeeds();
             }
+            this.pagination.page = 1;
+            this.updateURL();
+            this.loadFeeds();
         },
 
         removeTag(tagName) {
@@ -505,14 +511,17 @@ function feedsPage() {
 
         filterByTechnique(technique) {
             const techId = technique.id.toLowerCase();
-            // Add technique if not already in filter (additive)
-            if (!this.filters.techniques.includes(techId)) {
+            // Toggle technique filter
+            if (this.filters.techniques.includes(techId)) {
+                this.filters.techniques = this.filters.techniques.filter(t => t !== techId);
+                delete this.techniqueNames[techId];
+            } else {
                 this.filters.techniques.push(techId);
                 this.techniqueNames[techId] = technique.name;
-                this.pagination.page = 1;
-                this.updateURL();
-                this.loadFeeds();
             }
+            this.pagination.page = 1;
+            this.updateURL();
+            this.loadFeeds();
         },
 
         removeTechnique(techId) {

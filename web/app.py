@@ -14,6 +14,62 @@ def get_ioc_url_type(ioc_type):
     }
     return type_map.get(ioc_type, ioc_type)
 
+def calculate_actionability(item, max_cvss=None, technique_count=0):
+    """Calculate actionability score for a feed item.
+    
+    Weights what analysts can actually use:
+    - IOCs: +0.3 each, max 1.5
+    - MITRE techniques: +0.2 each, max 1.0
+    - CVSS score: +CVSS/10, max 1.0
+    - Threat actor attribution: +0.5
+    - Malware family: +0.3
+    - Recency <24h: +0.5, <72h: +0.3, <week: +0.1
+    
+    Max score ~4.8, scaled to 0-10
+    """
+    score = 0.0
+    
+    # IOC count contribution (0.3 per IOC, max 1.5)
+    ioc_count = len(item.iocs) if item.iocs else 0
+    score += min(ioc_count * 0.3, 1.5)
+    
+    # MITRE technique contribution (0.2 per technique, max 1.0)
+    score += min(technique_count * 0.2, 1.0)
+    
+    # CVSS contribution (max 1.0)
+    if max_cvss:
+        score += max_cvss / 10.0
+    
+    # Threat actor / malware family contribution
+    has_threat_actor = False
+    has_malware_family = False
+    for ioc in (item.iocs or []):
+        if ioc.threat_actor:
+            has_threat_actor = True
+        if ioc.malware_family:
+            has_malware_family = True
+    
+    if has_threat_actor:
+        score += 0.5
+    if has_malware_family:
+        score += 0.3
+    
+    # Recency contribution
+    if item.published_date:
+        now = datetime.now(UTC)
+        age = now - item.published_date.replace(tzinfo=UTC) if item.published_date.tzinfo is None else now - item.published_date
+        hours_old = age.total_seconds() / 3600
+        
+        if hours_old < 24:
+            score += 0.5
+        elif hours_old < 72:
+            score += 0.3
+        elif hours_old < 168:  # 1 week
+            score += 0.1
+    
+    # Scale to 0-10 (max raw score ~4.8)
+    return min(score * 2.08, 10.0)
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from storage.database import db
@@ -161,26 +217,35 @@ def get_feeds():
             time_ago = datetime.now(UTC) - timedelta(hours=hours)
             query = query.filter(FeedItem.collected_date >= time_ago)
         
-        # Sorting - default to chronological (newest first)
+        # Sorting options
         sort_by = request.args.get('sort', 'date')
-        if sort_by == 'relevance':
-            query = query.order_by(
-                FeedItem.relevance_score.desc(),
-                FeedItem.published_date.desc().nullslast()
-            )
-        else:  # Default: chronological by published_date
+        
+        # For CVSS and actionability sorting, we need to sort after fetching
+        # since these are computed values. For date sorting, we can use DB.
+        if sort_by == 'date':
             query = query.order_by(
                 FeedItem.published_date.desc().nullslast(),
                 FeedItem.collected_date.desc()
             )
+        # Other sorts will be applied after fetching
         
-        # Paginate
+        # Paginate - for computed sorts, we need all items first
         total = query.count()
-        items = query.limit(per_page).offset((page - 1) * per_page).all()
+        
+        # For computed sorts (cvss, ioc_count, actionability), fetch more and sort in Python
+        if sort_by in ['cvss', 'ioc_count', 'actionability']:
+            # Fetch all matching items for proper sorting
+            all_items = query.all()
+        else:
+            # For date sort, use DB pagination
+            items = query.limit(per_page).offset((page - 1) * per_page).all()
+            all_items = None
         
         # Serialize items
         items_data = []
-        for item in items:
+        items_to_process = all_items if all_items else items
+        
+        for item in items_to_process:
             # Extract MITRE techniques
             mitre_tags = [t for t in item.tags if t.category == 'mitre_technique']
             item_techniques = []
@@ -221,6 +286,9 @@ def get_feeds():
                             max_cvss = cvss
                             cvss_severity = ioc.cvss_v3_severity or ioc.cvss_v2_severity
 
+            # Calculate actionability score
+            actionability = calculate_actionability(item, max_cvss, len(item_techniques))
+
             items_data.append({
                 'id': item.id,
                 'title': item.title,
@@ -229,7 +297,7 @@ def get_feeds():
                 'published_date': item.published_date.isoformat() if item.published_date else None,
                 'collected_date': item.collected_date.isoformat(),
                 'severity': item.severity.value,
-                'relevance_score': item.relevance_score,
+                'actionability_score': round(actionability, 1),
                 'content_preview': item.content[:200] if item.content else '',
                 'tags': [{'name': t.name, 'category': t.category} for t in item.tags if t.category != 'mitre_technique'][:5],
                 'techniques': item_techniques,
@@ -238,6 +306,20 @@ def get_feeds():
                 'cvss_score': max_cvss,
                 'cvss_severity': cvss_severity
             })
+        
+        # Apply computed sorts
+        if sort_by == 'cvss':
+            items_data.sort(key=lambda x: (x['cvss_score'] or 0, x['actionability_score']), reverse=True)
+        elif sort_by == 'ioc_count':
+            items_data.sort(key=lambda x: (x['ioc_count'], x['actionability_score']), reverse=True)
+        elif sort_by == 'actionability':
+            items_data.sort(key=lambda x: x['actionability_score'], reverse=True)
+        
+        # Apply pagination for computed sorts
+        if sort_by in ['cvss', 'ioc_count', 'actionability']:
+            start = (page - 1) * per_page
+            end = start + per_page
+            items_data = items_data[start:end]
         
         return jsonify({
             'items': items_data,
