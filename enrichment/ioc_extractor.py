@@ -64,7 +64,7 @@ class IOCExtractor:
         self.domain_whitelist = {
             # Social/general
             'github.com', 'twitter.com', 'linkedin.com', 'facebook.com',
-            'google.com', 'microsoft.com', 'apple.com', 'amazon.com',
+            'google.com', 'googleblog.com', 'microsoft.com', 'apple.com', 'amazon.com',
             'youtube.com', 'reddit.com', 'wikipedia.org', 'medium.com',
             # URL shorteners
             'bit.ly', 't.co', 'ow.ly', 'tinyurl.com', 'goo.gl', 'is.gd',
