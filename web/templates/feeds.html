@@ -157,8 +157,8 @@
         <div class="divide-y divide-gray-700">
             <template x-for="item in feeds" :key="item.id">
                 <div class="p-6 hover:bg-gray-750 transition">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0">
                             <div class="flex items-center space-x-3 mb-2">
                                 <span class="px-2 py-1 text-xs font-semibold rounded"
                                       :class="{
@@ -173,7 +173,7 @@
                                 <span class="text-sm text-gray-500" x-text="formatDate(item.published_date)"></span>
                             </div>
                             
-                            <a :href="item.link" target="_blank" class="text-lg font-semibold text-blue-400 hover:text-blue-300" x-text="item.title"></a>
+                            <a :href="item.link" target="_blank" class="text-lg font-semibold text-blue-400 hover:text-blue-300 break-words" x-text="item.title"></a>
                             
                             <p class="mt-2 text-gray-400 text-sm" x-text="item.content_preview"></p>
                             
@@ -223,7 +223,7 @@
                             </template>
                         </div>
                         
-                        <div class="ml-4 text-right">
+                        <div class="flex-shrink-0 text-right w-20">
                             <!-- CVSS Score (if available) -->
                             <template x-if="item.cvss_score">
                                 <div class="mb-3">
