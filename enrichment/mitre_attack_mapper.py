@@ -423,14 +423,28 @@ class MitreAttackMapper:
     
     def get_technique_info(self, technique_id):
         """Get metadata for a technique"""
-        # Try STIX loader first
+        technique_id = technique_id.upper()
+        
+        # Try STIX loader first (exact match)
         if self.stix_loader and technique_id in self.stix_loader.techniques:
             t = self.stix_loader.techniques[technique_id]
             return {
                 'name': t['name'],
                 'tactic': t['tactic'],
-                'url': t.get('url', f'https://attack.mitre.org/techniques/{technique_id}/')
+                'url': t.get('url', f'https://attack.mitre.org/techniques/{technique_id.replace(".", "/")}/')
             }
+        
+        # For sub-techniques (T1234.001), try parent technique for tactic
+        if '.' in technique_id and self.stix_loader:
+            parent_id = technique_id.split('.')[0]
+            if parent_id in self.stix_loader.techniques:
+                parent = self.stix_loader.techniques[parent_id]
+                # Return sub-technique with parent's tactic
+                return {
+                    'name': technique_id,  # We don't have the sub-technique name
+                    'tactic': parent['tactic'],
+                    'url': f'https://attack.mitre.org/techniques/{technique_id.replace(".", "/")}/'
+                }
         
         # Fallback to hardcoded
         return self.technique_metadata.get(technique_id, {
