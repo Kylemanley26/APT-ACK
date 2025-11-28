@@ -399,12 +399,12 @@ def get_feed_detail(feed_id):
 def get_techniques():
     """Get MITRE ATT&CK technique coverage"""
     source = request.args.get('source', None)
+    show_all = request.args.get('show_all', 'false').lower() == 'true'
 
-    if source:
-        # Filter by source - query database directly
-        session = db.get_session()
-        try:
-            # Get all MITRE technique tags for the specified source
+    session = db.get_session()
+    try:
+        if source:
+            # Filter by source - query database directly
             technique_tags = session.query(
                 Tag.name,
                 func.count(FeedItem.id).label('count')
@@ -412,22 +412,28 @@ def get_techniques():
                 Tag.category == 'mitre_technique',
                 FeedItem.source_name == source
             ).group_by(Tag.name).all()
+        else:
+            # No source filter - get all technique tags
+            technique_tags = session.query(
+                Tag.name,
+                func.count(FeedItem.id).label('count')
+            ).join(FeedItem.tags).filter(
+                Tag.category == 'mitre_technique'
+            ).group_by(Tag.name).all()
 
-            # Build technique matrix
-            technique_matrix = {}
-            for tag, count in technique_tags:
-                tech_id = tag.replace('mitre-', '').upper()
-                tech_info = mitre_mapper.get_technique_info(tech_id)
-                technique_matrix[tech_id] = {
-                    'name': tech_info['name'],
-                    'tactic': tech_info['tactic'],
-                    'count': count
-                }
-        finally:
-            session.close()
-    else:
-        # No filter - use cached technique matrix
-        technique_matrix = mitre_mapper.export_technique_matrix()
+        # Build technique matrix from database results
+        technique_matrix = {}
+        for tag, count in technique_tags:
+            tech_id = tag.replace('mitre-', '').upper()
+            tech_info = mitre_mapper.get_technique_info(tech_id)
+            technique_matrix[tech_id] = {
+                'name': tech_info['name'],
+                'tactic': tech_info['tactic'],
+                'count': count
+            }
+
+    finally:
+        session.close()
 
     # Group by tactic
     by_tactic = {}
