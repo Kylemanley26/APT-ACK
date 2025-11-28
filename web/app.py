@@ -230,6 +230,8 @@ def get_feeds():
         # Other sorts will be applied after fetching
         
         # Paginate - for computed sorts, we need all items first
+        # Use distinct to avoid counting duplicates from tag joins
+        query = query.distinct()
         total = query.count()
         
         # For computed sorts (cvss, ioc_count, actionability), fetch more and sort in Python
