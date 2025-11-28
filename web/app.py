@@ -407,7 +407,7 @@ def get_techniques():
             # Filter by source - query database directly
             technique_tags = session.query(
                 Tag.name,
-                func.count(FeedItem.id).label('count')
+                func.count(func.distinct(FeedItem.id)).label('count')
             ).join(FeedItem.tags).filter(
                 Tag.category == 'mitre_technique',
                 FeedItem.source_name == source
@@ -416,7 +416,7 @@ def get_techniques():
             # No source filter - get all technique tags
             technique_tags = session.query(
                 Tag.name,
-                func.count(FeedItem.id).label('count')
+                func.count(func.distinct(FeedItem.id)).label('count')
             ).join(FeedItem.tags).filter(
                 Tag.category == 'mitre_technique'
             ).group_by(Tag.name).all()
