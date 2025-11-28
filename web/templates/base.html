@@ -255,10 +255,13 @@
 
         /* Floating dice animation */
         .floating-dice {
-            width: 28px;
-            height: 28px;
-            margin-left: 0.5rem;
-            vertical-align: middle;
+            width: 24px;
+            height: 24px;
+            margin-left: 0.4rem;
+            display: inline-block;
+            vertical-align: baseline;
+            position: relative;
+            top: -2px;
             animation: float 3s ease-in-out infinite;
             filter: drop-shadow(0 0 4px #08f) drop-shadow(0 0 8px #08f);
         }
@@ -268,8 +271,13 @@
                 transform: translateY(0) rotate(0deg); 
             }
             50% { 
-                transform: translateY(-6px) rotate(8deg); 
+                transform: translateY(-5px) rotate(6deg); 
             }
+        }
+
+        .neon-subtitle {
+            display: inline-flex;
+            align-items: center;
         }
     </style>
 </head>
