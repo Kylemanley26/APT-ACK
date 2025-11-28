@@ -252,6 +252,25 @@
                         0 0 4rem #08f,
                         inset 0 0 4rem #08f;
         }
+
+        /* Floating dice animation */
+        .floating-dice {
+            width: 28px;
+            height: 28px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 4px #08f) drop-shadow(0 0 8px #08f);
+        }
+
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            50% { 
+                transform: translateY(-6px) rotate(8deg); 
+            }
+        }
     </style>
 </head>
 <body class="text-white">
@@ -260,7 +279,7 @@
             <div class="flex items-center justify-between h-24">
                 <div class="flex flex-col items-start">
                     <h1 class="neon-title">AP<span>T</span>-A<span>C</span>K</h1>
-                    <span class="neon-subtitle">By IRL</span>
+                    <span class="neon-subtitle">By IRL<img src="/static/images/d20-icon.png" alt="" class="floating-dice"></span>
                 </div>
                 <div class="flex space-x-4">
                     <a href="/" class="text-white px-3 py-2 rounded-md text-sm font-medium">News Feed</a>
