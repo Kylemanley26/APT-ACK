@@ -691,6 +691,19 @@ def techniques_page():
     """MITRE ATT&CK techniques page"""
     return render_template('techniques.html')
 
+@app.route('/admin/retag', methods=['POST'])
+def admin_retag():
+    """Re-tag all feed items - requires admin key"""
+    admin_key = os.environ.get('ADMIN_KEY', '')
+    provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
+    
+    if not admin_key or provided_key != admin_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    from enrichment.tagging_engine import ThreatTagger
+    count = ThreatTagger().retag_all()
+    return jsonify({'retagged': count})
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port)
