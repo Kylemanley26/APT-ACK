@@ -9,22 +9,22 @@ class ThreatTagger:
             # ========================================
             # APT NUMBERED GROUPS (Mandiant/FireEye naming)
             # ========================================
-            'apt1', 'apt 1', 'apt2', 'apt 2', 'apt3', 'apt 3', 'apt4', 'apt 4',
-            'apt5', 'apt 5', 'apt6', 'apt 6', 'apt9', 'apt 9', 'apt10', 'apt 10',
-            'apt12', 'apt 12', 'apt14', 'apt 14', 'apt15', 'apt 15', 'apt16', 'apt 16',
-            'apt17', 'apt 17', 'apt18', 'apt 18', 'apt19', 'apt 19', 'apt20', 'apt 20',
-            'apt21', 'apt 21', 'apt22', 'apt 22', 'apt23', 'apt 23', 'apt26', 'apt 26',
-            'apt27', 'apt 27', 'apt28', 'apt 28', 'apt29', 'apt 29', 'apt30', 'apt 30',
-            'apt31', 'apt 31', 'apt32', 'apt 32', 'apt33', 'apt 33', 'apt34', 'apt 34',
-            'apt35', 'apt 35', 'apt36', 'apt 36', 'apt37', 'apt 37', 'apt38', 'apt 38',
-            'apt39', 'apt 39', 'apt40', 'apt 40', 'apt41', 'apt 41',
+            'APT1', 'APT 1', 'APT2', 'APT 2', 'APT3', 'APT 3', 'APT4', 'APT 4',
+            'APT5', 'APT 5', 'APT6', 'APT 6', 'APT9', 'APT 9', 'APT10', 'APT 10',
+            'APT12', 'APT 12', 'APT14', 'APT 14', 'APT15', 'APT 15', 'APT16', 'APT 16',
+            'APT17', 'APT 17', 'APT18', 'APT 18', 'APT19', 'APT 19', 'APT20', 'APT 20',
+            'APT21', 'APT 21', 'APT22', 'APT 22', 'APT23', 'APT 23', 'APT26', 'APT 26',
+            'APT27', 'APT 27', 'APT28', 'APT 28', 'APT29', 'APT 29', 'APT30', 'APT 30',
+            'APT31', 'APT 31', 'APT32', 'APT 32', 'APT33', 'APT 33', 'APT34', 'APT 34',
+            'APT35', 'APT 35', 'APT36', 'APT 36', 'APT37', 'APT 37', 'APT38', 'APT 38',
+            'APT39', 'APT 39', 'APT40', 'APT 40', 'APT41', 'APT 41',
             
             # ========================================
             # APT-C NUMBERED GROUPS (Qihoo 360 naming)
             # ========================================
-            'apt-c-00', 'apt-c-06', 'apt-c-09', 'apt-c-12', 'apt-c-17', 'apt-c-23',
-            'apt-c-26', 'apt-c-27', 'apt-c-34', 'apt-c-35', 'apt-c-36', 'apt-c-38',
-            'apt-c-39', 'apt-c-43',
+            'APT-c-00', 'APT-c-06', 'APT-c-09', 'APT-c-12', 'APT-c-17', 'APT-c-23',
+            'APT-c-26', 'APT-c-27', 'APT-c-34', 'APT-c-35', 'APT-c-36', 'APT-c-38',
+            'APT-c-39', 'APT-c-43',
             
             # ========================================
             # RUSSIAN THREAT ACTORS
@@ -32,17 +32,17 @@ class ThreatTagger:
             # APT28 / Fancy Bear cluster
             'fancy bear', 'sofacy', 'pawn storm', 'pawnstorm', 'sednit', 'snakemackerel',
             'tsar team', 'tsarteam', 'strontium', 'swallowtail', 'iron twilight',
-            'grizzly steppe', 'apt_sofacy', 'tag_0700', 'group 74', 'sig40', 'tg-4127',
+            'grizzly steppe', 'APT_sofacy', 'tag_0700', 'group 74', 'sig40', 'tg-4127',
             
             # APT29 / Cozy Bear cluster
-            'cozy bear', 'cozy duke', 'cozyduke', 'the dukes', 'dukes', 'euroapt',
+            'cozy bear', 'cozy duke', 'cozyduke', 'the dukes', 'dukes', 'euroAPT',
             'cozycar', 'cozer', 'office monkeys', 'officemonkeys', 'minidionis',
             'seaduke', 'hammer toss', 'yttrium', 'iron hemlock', 'group 100',
             'unc2452', 'darkhalo', 'stellarparticle', 'nobelium', 'midnight blizzard',
             
             # Turla cluster
             'turla', 'turla group', 'turla team', 'snake', 'venomous bear', 'uroburos',
-            'waterbug', 'wraith', 'pfinet', 'krypton', 'pacifier apt', 'popeye',
+            'waterbug', 'wraith', 'pfinet', 'krypton', 'pacifier APT', 'popeye',
             'sig23', 'iron hunter', 'makersmark', 'hippo team', 'group 88', 'tag_0530',
             'white bear', 'skipper turla',
             
@@ -73,7 +73,7 @@ class ThreatTagger:
             'tg-8223', 'group 3', 'advanced persistent threat 1',
             
             # APT3 / UPS / Gothic Panda
-            'ups', 'ups team', 'gothic panda', 'buckeye', 'boyusec', 'boron',
+            'UPS', 'UPS team', 'gothic panda', 'buckeye', 'boyusec', 'boron',
             'bronze mayfair', 'tg-0110', 'group 6',
             
             # APT10 / Stone Panda
@@ -115,9 +115,9 @@ class ThreatTagger:
             'esile', 'dragonfish', 'bronze elgin', 'lotus panda', 'elise',
             'lucky cat', 'maverick panda', 'sykipot', 'bronze edison', 'mirage',
             'vixen panda', 'ke3chang', 'gref', 'playful dragon', 'metushy',
-            'lurid', 'social network team', 'royal apt', 'bronze palace', 'mofang',
+            'lurid', 'social network team', 'royal APT', 'bronze palace', 'mofang',
             'superman', 'bronze walker', 'naikon', 'pla unit 78020', 'override panda',
-            'camerashy', 'apt.naikon', 'bronze geneva', 'nettraveler', 'travnet',
+            'camerashy', 'APT.naikon', 'bronze geneva', 'nettraveler', 'travnet',
             'nightshade panda', 'flowerlady', 'flowershow', 'nomad panda',
             'pale panda', 'pirate panda', 'keyboy', 'tropic trooper', 'tropictrooper',
             'bronze hobart', 'pitty panda', 'pittytiger', 'manganese', 'poisonous panda',
@@ -200,9 +200,9 @@ class ThreatTagger:
             # OTHER NATION-STATE / REGIONAL ACTORS
             # ========================================
             # Indian
-            'sidewinder', 'razor tiger', 'rattlesnake', 't-apt-04',
+            'sidewinder', 'razor tiger', 'rattlesnake', 't-APT-04',
             'viceroy tiger', 'appin', 'operationhangover', 'dark basin',
-            'donot team', 'apt-c-35',
+            'donot team', 'APT-c-35',
             
             # Pakistani
             'transparent tribe', 'operation c-major', 'c-major', 'mythic leopard',
@@ -221,7 +221,7 @@ class ThreatTagger:
             'molerats', 'gaza hackers team', 'gaza cybergang', 'operation molerats',
             'extreme jackal', 'moonlight', 'aluminum saratoga', 'aridviper',
             'desert falcon', 'arid viper', 'bahamut', 'goldmouse',
-            'golden falcon', 'blind eagle', 'el machete', 'machete', 'machete-apt',
+            'golden falcon', 'blind eagle', 'el machete', 'machete', 'machete-APT',
             
             # Turkish
             'promethium', 'strongpity', 'neodymium',
@@ -233,7 +233,7 @@ class ThreatTagger:
             'roaming tiger', 'bronze woodland', 'rotten tomato',
             
             # Southeast Asian
-            'rancor', 'rancor group', 'slingshot', 'calypso', 'calypso apt',
+            'rancor', 'rancor group', 'slingshot', 'calypso', 'calypso APT',
             'calypso group', 'gelsemium', 'ta428', 'ta410', 'ta413',
             'platinum', 'twoforone', 'poison carp', 'evil eye',
             'windshift', 'xdspy', 'nazar', 'sig37',
@@ -294,7 +294,7 @@ class ThreatTagger:
             
             # Other Cybercrime
             'carbanak', 'anunak', 'buhtrap', 'gcman', 'moneymaker', 'silence',
-            'silence group', 'silence apt group', 'whisper spider', 'rtm',
+            'silence group', 'silence APT group', 'whisper spider', 'rtm',
             'evilnum', 'deathstalker', 'fxmsp', 'gnosticplayers', 'shinyhunters',
             'lapsus', 'lapsus$', 'scattered spider', 'unc3944', 'octo tempest',
             'scatter swine', 'muddled libra', '0ktapus', 'magecart',
@@ -320,7 +320,7 @@ class ThreatTagger:
             'ghostnet', 'snooping dragon', 'shadow network', 'hacking team',
             'dark hotel', 'darkhotel', 'dubnium', 'fallout team', 'karba',
             'luder', 'nemim', 'nemin', 'tapaoux', 'pioneer', 'shadow crane',
-            'sig25', 'tungsten bridge', 't-apt-02', 'careto', 'the mask', 'mask',
+            'sig25', 'tungsten bridge', 't-APT-02', 'careto', 'the mask', 'mask',
             'ugly face', 'cloud atlas', 'inception framework', 'red october',
             'the rocra', 'rocra', 'redalpha', 'redecho', 'projectsauron',
             'strider', 'sauron', 'project sauron', 'orangeworm', 'poseidon group',
@@ -343,7 +343,7 @@ class ThreatTagger:
             'hummingbad', 'unc1878', 'viceleaker', 'zoopark', 'xenotime',
             'temp.veles', 'terbium', 'taidoor', 'temptick', 'the big bang',
             'raspite', 'leafminer', 'snowglobe', 'animal farm',
-            'apt.3102', 'luoxk', 'notrobin', 'vault 7', 'vault 8',
+            'APT.3102', 'luoxk', 'notrobin', 'vault 7', 'vault 8',
             
             # ========================================
             # 2024-2025 EMERGING ACTORS
@@ -385,29 +385,29 @@ class ThreatTagger:
             
             # Generic types
             'ransomware', 'backdoor', 'trojan', 'wiper', 'rootkit',
-            'stealer', 'loader', 'rat', 'keylogger', 'spyware', 'botnet', 'infostealer'
+            'stealer', 'loader', 'RAT', 'keylogger', 'spyware', 'botnet', 'infostealer'
         }
         
         # Attack types / Techniques
         self.attack_types = {
             # Delivery methods
-            'ransomware', 'phishing', 'spear phishing', 'business email compromise', 'bec',
+            'ransomware', 'phishing', 'spear phishing', 'business email compromise', 'BEC',
             'smishing', 'vishing', 'voice phishing', 'callback phishing', 'quishing',
             'malspam', 'malvertising', 'drive-by download', 'watering hole',
             
             # Social engineering
             'social engineering', 'help desk scam', 'it support scam', 'mfa fatigue',
-            'sim swapping', 'sim swap', 'account takeover', 'ato',
+            'sim swapping', 'sim swap', 'account takeover', 'ATO',
             
             # Network attacks
-            'ddos', 'dos', 'man-in-the-middle', 'mitm', 'arp spoofing', 'dns poisoning',
+            'DDOS', 'DOC', 'man-in-the-middle', 'mitm', 'arp spoofing', 'dns poisoning',
             
             # Web attacks
-            'sql injection', 'sqli', 'xss', 'cross-site scripting', 'csrf', 'ssrf',
+            'sql injection', 'sqli', 'xss', 'XSS', 'cross-site scripting', 'csrf', 'ssrf',
             'command injection', 'path traversal', 'lfi', 'rfi', 'xxe', 'deserialization',
             
             # Exploitation
-            'rce', 'remote code execution', 'privilege escalation', 'privesc',
+            'rce', 'RCE', 'remote code execution', 'privilege escalation', 'privesc',
             'lateral movement', 'credential theft', 'credential stuffing', 'password spraying',
             'kerberoasting', 'pass-the-hash', 'pass-the-ticket', 'golden ticket',
             
@@ -424,7 +424,7 @@ class ThreatTagger:
             'saml attack', 'golden saml',
             
             # Other
-            'zero-day', '0-day', 'exploit', 'vulnerability', 'patch', 'cve',
+            'zero-day', '0-day', 'exploit', 'vulnerability', 'patch', 'cve', 'CVE',
             'cryptojacking', 'cryptomining', 'insider threat'
         }
         
@@ -432,12 +432,12 @@ class ThreatTagger:
         self.sectors = {
             # Healthcare
             'healthcare', 'hospital', 'medical', 'pharmaceutical', 'pharma', 'biotech',
-            'clinical', 'patient', 'hipaa', 'health system', 'medical device',
+            'clinical', 'patient', 'hipaa', 'HIPAA', 'health system', 'medical device',
             
             # Financial
             'financial', 'banking', 'bank', 'fintech', 'insurance', 'investment',
             'credit union', 'mortgage', 'trading', 'hedge fund', 'private equity',
-            'cryptocurrency', 'crypto', 'defi', 'exchange',
+            'cryptocurrency', 'crypto', 'deFi' 'exchange',
             
             # Energy & Utilities
             'energy', 'oil and gas', 'utilities', 'power grid', 'nuclear',
@@ -453,28 +453,28 @@ class ThreatTagger:
             'k-12', 'district', 'student', 'campus',
             
             # Retail & E-commerce
-            'retail', 'e-commerce', 'ecommerce', 'merchant', 'pos',
+            'retail', 'e-commerce', 'ecommerce', 'merchant', 'PoS',
             'point of sale', 'shopping', 'consumer',
             
             # Manufacturing & Industrial
             'manufacturing', 'industrial', 'automotive', 'semiconductor',
-            'factory', 'plant', 'ics', 'scada', 'plc',
-            'operational technology', 'industrial control',
+            'factory', 'plant', 'ICS', 'scada', 'PLC',
+            'operational technology', 'industrial control', 'OT',
             
             # Transportation & Logistics
             'transportation', 'aviation', 'airline', 'airport', 'shipping',
-            'logistics', 'rail', 'railway', 'port', 'maritime', 'trucking',
+            'logistics', 'rail', 'railway', 'maritime', 'trucking',
             
             # Telecom & Communications
-            'telecom', 'telecommunications', 'isp', 'carrier', 'mobile',
+            'telecom', 'telecommunications', 'ISP', 'carrier', 'mobile',
             'wireless', '5g', 'broadband', 'satellite',
             
             # Critical Infrastructure
-            'critical infrastructure', 'cisa', 'national security',
+            'critical infrastructure', 'cisa', 'national security', 'CISA',
             
             # Defense & Aerospace
             'defense', 'military', 'aerospace', 'contractor',
-            'pentagon', 'nato', 'armed forces',
+            'pentagon', 'nato', 'armed forces', 'NATO', 'DOD', 'DOW', 'NSA',
             
             # Legal & Professional Services
             'legal', 'law firm', 'attorney', 'accounting', 'consulting',
@@ -589,11 +589,11 @@ class ThreatTagger:
         
         # IoT / Embedded / Hardware
         self.iot = {
-            'iot', 'internet of things', 'smart home', 'smart device',
+            'IOT', 'internet of things', 'smart home', 'smart device',
             'embedded', 'firmware', 'router', 'camera', 'dvr', 'nvr',
             'smart tv', 'thermostat', 'smart lock', 'doorbell',
             'wearable', 'medical device', 'pacemaker', 'insulin pump',
-            'scada', 'plc', 'hmi', 'rtu', 'ics', 'industrial control',
+            'scada', 'HMI', 'rtu', 'industrial control',
             'modbus', 'dnp3', 'bacnet', 'opc',
             'zigbee', 'zwave', 'bluetooth', 'lora', 'mqtt',
             'raspberry pi', 'arduino', 'esp32', 'esp8266'
@@ -604,15 +604,15 @@ class ThreatTagger:
             # Tech giants
             'google', 'apple', 'meta', 'facebook', 'amazon', 'microsoft',
             'twitter', 'x.com', 'linkedin', 'tiktok', 'bytedance', 'netflix',
-            'spotify', 'uber', 'lyft', 'airbnb', 'dropbox', 'box',
-            
+            'spotify', 'uber', 'lyft', 'airbnb', 'dropbox', 'X',
+
             # Retail
             'walmart', 'target', 'bestbuy', 'best buy', 'home depot', 'lowes',
-            'costco', 'kroger', 'walgreens', 'cvs', 'newegg',
+            'costco', 'kroger', 'walgreens', 'CVS', 'newegg',
             
             # Telecom
             'at&t', 'verizon', 't-mobile', 'sprint', 'comcast', 'spectrum',
-            'vodafone', 'telefonica', 'orange', 'bt', 'deutsche telekom',
+            'vodafone', 'telefonica', 'orange', 'BT', 'deutsche telekom',
             
             # Financial
             'jpmorgan', 'bank of america', 'wells fargo', 'citibank', 'goldman sachs',
@@ -620,18 +620,18 @@ class ThreatTagger:
             'mastercard', 'paypal', 'stripe', 'square', 'robinhood', 'coinbase',
             
             # Healthcare
-            'unitedhealth', 'anthem', 'cigna', 'humana', 'kaiser', 'hca',
+            'unitedhealth', 'anthem', 'cigna', 'humana', 'kaiser', 'HCA',
             'change healthcare', 'cerner', 'epic systems',
             
             # Auto
-            'tesla', 'ford', 'gm', 'toyota', 'volkswagen', 'bmw', 'mercedes',
-            'jaguar', 'land rover', 'jaguar land rover',
+            'tesla', 'ford', 'GM', 'toyota', 'volkswagen', 'BMW', 'mercedes',
+            'jaguar', 'land rover', 'jaguar', 'land rover',
             
             # Other major corps
             'disney', 'hulu', 'sony', 'nintendo', 'activision',
             'boeing', 'lockheed', 'raytheon', 'northrop',
-            'exxon', 'chevron', 'shell', 'bp',
-            'fedex', 'ups', 'dhl', 'usps',
+            'exxon', 'chevron', 'shell', 'BP',
+            'fedex', 'UPS', 'DHL', 'USPS', 'EA',
             'marriott', 'hilton', 'mgm', 'caesars',
             
             # Tech companies (security relevant)
@@ -646,11 +646,11 @@ class ThreatTagger:
         
         # Government agencies / Law enforcement
         self.agencies = {
-            'fbi', 'cisa', 'nsa', 'dhs', 'secret service', 'doj',
-            'cia', 'dea', 'atf', 'ice', 'cbp', 'tsa',
-            'europol', 'interpol', 'ncsc', 'gchq', 'mi5', 'mi6',
-            'bka', 'anssi', 'asd', 'cse', 'bsi',
-            'nist', 'enisa', 'cert', 'us-cert', 'ic3'
+            'FBI', 'CISA', 'NSA', 'DHS', 'secret service', 'DOJ',
+            'CIA', 'DEA', 'ATF', 'ICE', 'CBP', 'TSA',
+            'europol', 'interpol', 'NCSC', 'GCHQ', 'mi5', 'mi6',
+            'BKA', 'ANSSI', 'ASD', 'CSE', 'BSI',
+            'NIST', 'enisa', 'CERT', 'us-cert', 'ic3', 'CIS',
         }
         
         # Severity indicators
@@ -660,12 +660,25 @@ class ThreatTagger:
                         'wormable', 'ransomware', 'data breach'],
             'high': ['high severity', 'privilege escalation', 'authentication bypass',
                     'sql injection', 'credential theft', 'lateral movement',
-                    'backdoor', 'supply chain', 'apt'],
+                    'backdoor', 'supply chain', 'APT'],
             'medium': ['vulnerability', 'security update', 'patch available',
                       'denial of service', 'information disclosure', 'xss'],
             'low': ['security advisory', 'best practices', 'hardening',
                    'configuration', 'awareness']
         }
+    
+    def _keyword_match(self, keyword, text, text_lower):
+        """
+        Match keyword against text with smart case sensitivity.
+        - Keywords with ANY uppercase letters: case-sensitive match against original text
+        - All-lowercase keywords: case-insensitive match against text_lower
+        """
+        if keyword != keyword.lower():
+            # Has uppercase - case-sensitive search
+            return keyword in text
+        else:
+            # All lowercase - case-insensitive search
+            return keyword in text_lower
     
     def extract_tags(self, text):
         """Extract all applicable tags from text"""
@@ -674,52 +687,52 @@ class ThreatTagger:
         
         # Threat actors
         for actor in self.threat_actors:
-            if actor in text_lower:
+            if self._keyword_match(actor, text, text_lower):
                 tags[actor] = 'threat_actor'
         
         # Malware families
         for malware in self.malware_families:
-            if malware in text_lower:
+            if self._keyword_match(malware, text, text_lower):
                 tags[malware] = 'malware'
         
         # Attack types
         for attack in self.attack_types:
-            if attack in text_lower:
+            if self._keyword_match(attack, text, text_lower):
                 tags[attack] = 'attack_type'
         
         # Sectors
         for sector in self.sectors:
-            if sector in text_lower:
+            if self._keyword_match(sector, text, text_lower):
                 tags[sector] = 'sector'
         
         # Vendors
         for vendor in self.vendors:
-            if vendor in text_lower:
+            if self._keyword_match(vendor, text, text_lower):
                 tags[vendor] = 'vendor'
         
         # Infrastructure
         for infra in self.infrastructure:
-            if infra in text_lower:
+            if self._keyword_match(infra, text, text_lower):
                 tags[infra] = 'infrastructure'
         
         # Tools
         for tool in self.tools:
-            if tool in text_lower:
+            if self._keyword_match(tool, text, text_lower):
                 tags[tool] = 'tool'
         
         # IoT
         for iot in self.iot:
-            if iot in text_lower:
+            if self._keyword_match(iot, text, text_lower):
                 tags[iot] = 'iot'
         
         # Companies
         for company in self.companies:
-            if company in text_lower:
+            if self._keyword_match(company, text, text_lower):
                 tags[company] = 'company'
         
         # Agencies
         for agency in self.agencies:
-            if agency in text_lower:
+            if self._keyword_match(agency, text, text_lower):
                 tags[agency] = 'agency'
         
         return tags
