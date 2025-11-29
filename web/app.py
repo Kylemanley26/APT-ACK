@@ -693,16 +693,41 @@ def techniques_page():
 
 @app.route('/admin/retag', methods=['POST'])
 def admin_retag():
-    """Re-tag all feed items - requires admin key"""
+    """Re-tag feed items - requires admin key. Use ?limit=N&offset=M to batch."""
     admin_key = os.environ.get('ADMIN_KEY', '')
     provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
     
     if not admin_key or provided_key != admin_key:
         return jsonify({'error': 'Unauthorized'}), 401
     
+    limit = request.args.get('limit', type=int, default=100)
+    offset = request.args.get('offset', type=int, default=0)
+    
     from enrichment.tagging_engine import ThreatTagger
-    count = ThreatTagger().retag_all()
-    return jsonify({'retagged': count})
+    from storage.database import db
+    from storage.models import FeedItem
+    
+    session = db.get_session()
+    try:
+        total = session.query(FeedItem).count()
+        items = session.query(FeedItem).order_by(FeedItem.id).offset(offset).limit(limit).all()
+        item_ids = [item.id for item in items]
+    finally:
+        session.close()
+    
+    tagger = ThreatTagger()
+    count = 0
+    for feed_id in item_ids:
+        if tagger.tag_feed_item(feed_id):
+            count += 1
+    
+    return jsonify({
+        'retagged': count,
+        'offset': offset,
+        'limit': limit,
+        'total': total,
+        'next_offset': offset + limit if offset + limit < total else None
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
