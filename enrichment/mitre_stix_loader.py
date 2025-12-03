@@ -12,7 +12,7 @@ import os
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 # Cache settings
 CACHE_DIR = Path(__file__).parent.parent / "data" / "mitre"
@@ -28,15 +28,15 @@ class MitreStixLoader:
     """Load and parse MITRE ATT&CK data from STIX 2.1 format"""
     
     def __init__(self, auto_update: bool = True):
-        self.stix_data = None
-        self.techniques = {}  # T1234 -> {name, tactic, description, ...}
-        self.tactics = {}     # TA0001 -> {name, description}
-        self.groups = {}      # G0001 -> {name, aliases, description}
-        self.software = {}    # S0001 -> {name, type, description}
-        self.technique_to_tactic = {}  # T1234 -> tactic_name
-        
+        self.stix_data: Optional[dict[str, Any]] = None
+        self.techniques: dict[str, dict[str, Any]] = {}  # T1234 -> {name, tactic, description, ...}
+        self.tactics: dict[str, dict[str, Any]] = {}     # TA0001 -> {name, description}
+        self.groups: dict[str, dict[str, Any]] = {}      # G0001 -> {name, aliases, description}
+        self.software: dict[str, dict[str, Any]] = {}    # S0001 -> {name, type, description}
+        self.technique_to_tactic: dict[str, str] = {}  # T1234 -> tactic_name
+
         # Keyword patterns for detection (built from technique descriptions)
-        self.technique_patterns = {}
+        self.technique_patterns: dict[str, list[str]] = {}
         
         if auto_update:
             self.load_data()
@@ -336,10 +336,10 @@ class MitreStixLoader:
         """Get technique patterns in format compatible with existing mapper"""
         return self.technique_patterns.copy()
     
-    def export_for_api(self) -> dict:
+    def export_for_api(self) -> dict[str, list[dict[str, Any]]]:
         """Export data structure for API endpoint"""
         # Group techniques by tactic
-        by_tactic = {}
+        by_tactic: dict[str, list[dict[str, Any]]] = {}
         for tactic_name in self.get_all_tactics():
             by_tactic[tactic_name] = []
         

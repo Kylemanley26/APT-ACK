@@ -1,10 +1,12 @@
 from datetime import datetime, UTC
+from typing import List, Optional
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, ForeignKey, Table, Boolean, Enum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 import enum
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 # Association table for many-to-many relationship between FeedItems and Tags
 feed_tags = Table(
@@ -42,24 +44,24 @@ class IOCType(enum.Enum):
 
 class FeedItem(Base):
     __tablename__ = 'feed_items'
-    
-    id = Column(Integer, primary_key=True)
-    source_name = Column(String(255), nullable=False, index=True)
-    source_url = Column(String(512))
-    title = Column(String(512), nullable=False)
-    content = Column(Text)
-    link = Column(String(512), unique=True, index=True)
-    published_date = Column(DateTime, index=True)
-    collected_date = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
-    
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    title: Mapped[str] = mapped_column(String(512), nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    link: Mapped[Optional[str]] = mapped_column(String(512), unique=True, index=True, nullable=True)
+    published_date: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, nullable=True)
+    collected_date: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+
     # Scoring and classification
-    severity = Column(Enum(SeverityLevel), default=SeverityLevel.INFO, index=True)
-    relevance_score = Column(Float, default=0.0)
-    
+    severity: Mapped[SeverityLevel] = mapped_column(Enum(SeverityLevel), default=SeverityLevel.INFO, index=True)
+    relevance_score: Mapped[Optional[float]] = mapped_column(Float, default=0.0)
+
     # Metadata
-    raw_content = Column(Text)
-    processed = Column(Boolean, default=False, index=True)
-    
+    raw_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    processed: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+
     # Relationships
     iocs = relationship('IOC', back_populates='feed_item', cascade='all, delete-orphan')
     tags = relationship('Tag', secondary=feed_tags, back_populates='feed_items')
@@ -69,31 +71,31 @@ class FeedItem(Base):
 
 class IOC(Base):
     __tablename__ = 'iocs'
-    
-    id = Column(Integer, primary_key=True)
-    feed_item_id = Column(Integer, ForeignKey('feed_items.id'), nullable=False, index=True)
-    
-    ioc_type = Column(Enum(IOCType), nullable=False, index=True)
-    value = Column(String(512), nullable=False, index=True)
-    context = Column(Text)
-    
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    feed_item_id: Mapped[int] = mapped_column(Integer, ForeignKey('feed_items.id'), nullable=False, index=True)
+
+    ioc_type: Mapped[IOCType] = mapped_column(Enum(IOCType), nullable=False, index=True)
+    value: Mapped[str] = mapped_column(String(512), nullable=False, index=True)
+    context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     # Confidence and validation
-    confidence = Column(Float, default=0.5)
-    verified = Column(Boolean, default=False)
-    first_seen = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
-    last_seen = Column(DateTime, default=lambda: datetime.now(UTC))
-    
+    confidence: Mapped[Optional[float]] = mapped_column(Float, default=0.5)
+    verified: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    first_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
     # Enrichment data
-    threat_actor = Column(String(255))
-    malware_family = Column(String(255))
-    mitre_techniques = Column(Text)
+    threat_actor: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    malware_family: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    mitre_techniques: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # CVSS Scoring (from NVD enrichment)
-    cvss_v3_score = Column(Float, index=True)              # 0.0-10.0 base score
-    cvss_v3_severity = Column(String(20))                  # CRITICAL/HIGH/MEDIUM/LOW
-    cvss_v3_vector = Column(String(100))                   # Full CVSS v3 vector string
-    cvss_v2_score = Column(Float)                          # Legacy CVSS v2 (fallback)
-    cvss_v2_severity = Column(String(20))                  # Legacy severity
+    cvss_v3_score: Mapped[Optional[float]] = mapped_column(Float, index=True, nullable=True)
+    cvss_v3_severity: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    cvss_v3_vector: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    cvss_v2_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    cvss_v2_severity: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Relationships
     feed_item = relationship('FeedItem', back_populates='iocs')
@@ -104,50 +106,52 @@ class IOC(Base):
 
 class Tag(Base):
     __tablename__ = 'tags'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), unique=True, nullable=False, index=True)
-    category = Column(String(100))
-    auto_generated = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=lambda: datetime.now(UTC))
-    
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    auto_generated: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
+    created_date: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+
     # Relationships
     feed_items = relationship('FeedItem', secondary=feed_tags, back_populates='tags')
     iocs = relationship('IOC', secondary=ioc_tags, back_populates='tags')
-    
+
     def __repr__(self):
         return f"<Tag(name={self.name}, category={self.category})>"
 
+
 class Alert(Base):
     __tablename__ = 'alerts'
-    
-    id = Column(Integer, primary_key=True)
-    feed_item_id = Column(Integer, ForeignKey('feed_items.id'), index=True)
-    
-    title = Column(String(512), nullable=False)
-    description = Column(Text)
-    severity = Column(Enum(SeverityLevel), nullable=False, index=True)
-    
-    created_date = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
-    acknowledged = Column(Boolean, default=False, index=True)
-    dismissed = Column(Boolean, default=False)
-    
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    feed_item_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('feed_items.id'), index=True, nullable=True)
+
+    title: Mapped[str] = mapped_column(String(512), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    severity: Mapped[SeverityLevel] = mapped_column(Enum(SeverityLevel), nullable=False, index=True)
+
+    created_date: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    acknowledged: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    dismissed: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+
     # Digest tracking
-    included_in_digest = Column(Boolean, default=False)
-    digest_date = Column(DateTime)
-    
+    included_in_digest: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    digest_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     def __repr__(self):
         return f"<Alert(id={self.id}, severity={self.severity.value}, title={self.title[:50]})>"
 
+
 class DigestLog(Base):
     __tablename__ = 'digest_logs'
-    
-    id = Column(Integer, primary_key=True)
-    digest_type = Column(String(50))
-    generated_date = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
-    item_count = Column(Integer)
-    sent_successfully = Column(Boolean, default=False)
-    recipients = Column(Text)
-    
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    digest_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    generated_date: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    item_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    sent_successfully: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    recipients: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     def __repr__(self):
         return f"<DigestLog(type={self.digest_type}, date={self.generated_date})>"

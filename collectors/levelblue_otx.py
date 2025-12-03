@@ -131,7 +131,7 @@ class LevelBlueCollector:
                     # File hash analysis
                     analysis = malware_data.get('analysis', {})
                     malware_families = analysis.get('malware', {}).get('data', [])
-                    if malware_families and not ioc.malware_family:
+                    if malware_families and ioc.malware_family is None:
                         detections = malware_families[0].get('detections', {})
                         if isinstance(detections, dict):
                             family = detections.get('avast', '') or detections.get('kaspersky', '') or ''
@@ -141,7 +141,7 @@ class LevelBlueCollector:
                 else:
                     # IP/Domain malware associations
                     malware_list = malware_data.get('data', [])
-                    if malware_list and not ioc.malware_family:
+                    if malware_list and ioc.malware_family is None:
                         detections = malware_list[0].get('detections', '')
                         if detections:
                             ioc.malware_family = str(detections)[:255]
@@ -168,23 +168,24 @@ class LevelBlueCollector:
                         mitre_techniques.add(technique_id)
             
             # Update threat actor if found
-            if threat_actors and not ioc.threat_actor:
+            if threat_actors and ioc.threat_actor is None:
                 ioc.threat_actor = ', '.join(list(threat_actors)[:3])[:255]
                 print(f"  Threat actors: {ioc.threat_actor}")
             
             # Update MITRE techniques
             if mitre_techniques:
-                existing_techniques = ioc.mitre_techniques or ''
+                existing_techniques = str(ioc.mitre_techniques or '')
                 all_techniques = set(existing_techniques.split(', ')) if existing_techniques else set()
                 all_techniques.update(mitre_techniques)
                 ioc.mitre_techniques = ', '.join(sorted(all_techniques))[:500]
                 print(f"  MITRE techniques: {ioc.mitre_techniques}")
-            
+
             # Increase confidence based on pulse count
             if pulse_count > 0:
                 # Boost confidence (max 0.95)
                 confidence_boost = min(pulse_count * 0.05, 0.3)
-                ioc.confidence = min(ioc.confidence + confidence_boost, 0.95)
+                current_confidence = float(ioc.confidence or 0.5)
+                ioc.confidence = min(current_confidence + confidence_boost, 0.95)
                 print(f"  Updated confidence: {ioc.confidence:.2f}")
             
             # Mark as verified if found in multiple pulses

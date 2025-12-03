@@ -237,15 +237,13 @@ def get_feeds():
         # For computed sorts (cvss, ioc_count, actionability), fetch more and sort in Python
         if sort_by in ['cvss', 'ioc_count', 'actionability']:
             # Fetch all matching items for proper sorting
-            all_items = query.all()
+            items_to_process = query.all()
         else:
             # For date sort, use DB pagination
-            items = query.limit(per_page).offset((page - 1) * per_page).all()
-            all_items = None
-        
+            items_to_process = query.limit(per_page).offset((page - 1) * per_page).all()
+
         # Serialize items
         items_data = []
-        items_to_process = all_items if all_items else items
         
         for item in items_to_process:
             # Extract MITRE techniques

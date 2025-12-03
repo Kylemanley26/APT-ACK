@@ -37,9 +37,9 @@
     <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-8">
         <h2 class="text-xl font-bold mb-4">Severity Breakdown</h2>
         <div class="grid grid-cols-5 gap-4">
-            <template x-for="(count, severity) in stats.severity_counts" :key="severity">
+            <template x-for="severity in severityOrder" :key="severity">
                 <button @click="filterBySeverity(severity)" class="text-center hover:bg-gray-750 rounded-lg p-4 transition">
-                    <div class="text-2xl font-bold" 
+                    <div class="text-2xl font-bold"
                          :class="{
                              'text-red-500': severity === 'critical',
                              'text-orange-500': severity === 'high',
@@ -47,7 +47,7 @@
                              'text-blue-500': severity === 'low',
                              'text-gray-500': severity === 'info'
                          }"
-                         x-text="count"></div>
+                         x-text="stats.severity_counts[severity] || 0"></div>
                     <div class="text-sm text-gray-400 uppercase mt-1" x-text="severity"></div>
                 </button>
             </template>
@@ -195,6 +195,7 @@ function dashboard() {
             mitre_techniques: 0,
             severity_counts: {}
         },
+        severityOrder: ['critical', 'high', 'medium', 'low', 'info'],
         feeds: [],
         filters: {
             severity: ''
