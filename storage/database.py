@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from storage.models import Base
 import os
@@ -70,7 +70,7 @@ class Database:
         """Check database connectivity"""
         try:
             session = self.get_session()
-            session.execute("SELECT 1")
+            session.execute(text("SELECT 1"))
             session.close()
             return True
         except Exception as e:

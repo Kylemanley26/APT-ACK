@@ -8,27 +8,34 @@ Maps feed items to MITRE ATT&CK techniques using:
 """
 
 import re
+from typing import TYPE_CHECKING, Any, Optional
 from storage.database import db
 from storage.models import FeedItem, IOC, Tag
 
 # Try to import STIX loader, fall back gracefully
+STIX_AVAILABLE = False
+get_mitre_loader = None
+
 try:
-    from enrichment.mitre_stix_loader import get_mitre_loader, MitreStixLoader
+    from enrichment.mitre_stix_loader import get_mitre_loader as _get_mitre_loader, MitreStixLoader
     STIX_AVAILABLE = True
+    get_mitre_loader = _get_mitre_loader
 except ImportError:
-    STIX_AVAILABLE = False
     print("Warning: MITRE STIX loader not available, using hardcoded patterns")
+
+if TYPE_CHECKING:
+    from enrichment.mitre_stix_loader import MitreStixLoader
 
 
 class MitreAttackMapper:
     def __init__(self):
-        self.stix_loader = None
-        
+        self.stix_loader: Optional["MitreStixLoader"] = None
+
         # Try to load STIX data
-        if STIX_AVAILABLE:
+        if STIX_AVAILABLE and get_mitre_loader is not None:
             try:
                 self.stix_loader = get_mitre_loader()
-                if self.stix_loader.techniques:
+                if self.stix_loader and self.stix_loader.techniques:
                     print(f"MITRE ATT&CK: Loaded {len(self.stix_loader.techniques)} techniques from STIX")
                     self._init_from_stix()
                     return
@@ -41,6 +48,9 @@ class MitreAttackMapper:
     
     def _init_from_stix(self):
         """Initialize from STIX data"""
+        if self.stix_loader is None:
+            self._init_hardcoded()
+            return
         self.technique_patterns = self.stix_loader.get_technique_patterns()
         self.technique_metadata = self.stix_loader.get_technique_metadata()
         

@@ -295,7 +295,7 @@ def get_feeds():
                 'source_name': item.source_name,
                 'link': item.link,
                 'published_date': item.published_date.isoformat() if item.published_date else None,
-                'collected_date': item.collected_date.isoformat(),
+                'collected_date': item.collected_date.isoformat() if item.collected_date else None,
                 'severity': item.severity.value,
                 'actionability_score': round(actionability, 1),
                 'content_preview': item.content[:200] if item.content else '',
@@ -364,7 +364,7 @@ def get_feed_detail(feed_id):
             'link': item.link,
             'content': item.content,
             'published_date': item.published_date.isoformat() if item.published_date else None,
-            'collected_date': item.collected_date.isoformat(),
+            'collected_date': item.collected_date.isoformat() if item.collected_date else None,
             'severity': item.severity.value,
             'relevance_score': item.relevance_score,
             'tags': [{'name': t.name, 'category': t.category} for t in item.tags if t.category != 'mitre_technique'],
@@ -490,7 +490,7 @@ def get_cve_detail(cve_id):
             'confidence': ioc.confidence,
             'context': ioc.context,
             'verified': ioc.verified,
-            'first_seen': ioc.first_seen.isoformat(),
+            'first_seen': ioc.first_seen.isoformat() if ioc.first_seen else None,
             'threat_actor': ioc.threat_actor,
             'malware_family': ioc.malware_family,
             'cwe_ids': ioc.mitre_techniques,
@@ -533,7 +533,7 @@ def get_ioc_detail(ioc_type, value):
         if not iocs:
             return jsonify({'error': 'IOC not found'}), 404
         
-        primary_ioc = max(iocs, key=lambda x: x.confidence)
+        primary_ioc = max(iocs, key=lambda x: x.confidence or 0.0)
         
         feed_items = []
         seen_ids = set()
@@ -563,15 +563,21 @@ def get_ioc_detail(ioc_type, value):
         for ioc in iocs:
             for tag in ioc.tags:
                 all_tags.add((tag.name, tag.category))
-        
+
+        # Calculate first/last seen with proper null handling
+        first_seen_dates = [i.first_seen for i in iocs if i.first_seen]
+        last_seen_dates = [i.last_seen for i in iocs if i.last_seen]
+        first_seen_str = min(first_seen_dates).isoformat() if first_seen_dates else None
+        last_seen_str = max(last_seen_dates).isoformat() if last_seen_dates else None
+
         return jsonify({
             'ioc_type': ioc_type,
             'value': value,
             'confidence': primary_ioc.confidence,
             'context': primary_ioc.context,
             'verified': primary_ioc.verified,
-            'first_seen': min(i.first_seen for i in iocs).isoformat(),
-            'last_seen': max(i.last_seen for i in iocs).isoformat(),
+            'first_seen': first_seen_str,
+            'last_seen': last_seen_str,
             'threat_actor': primary_ioc.threat_actor,
             'malware_family': primary_ioc.malware_family,
             'mitre_techniques': primary_ioc.mitre_techniques,
@@ -726,6 +732,11 @@ def admin_retag():
         'total': total,
         'next_offset': offset + limit if offset + limit < total else None
     })
+
+@app.route('/misp')
+def misp_page():
+    """MISP feed integration page"""
+    return render_template('misp.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

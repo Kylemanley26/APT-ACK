@@ -1,10 +1,24 @@
 import feedparser
 import requests
 from datetime import datetime, UTC
+from time import struct_time
+from typing import Any, Optional
 from storage.database import db
 from storage.models import FeedItem, SeverityLevel
 from bs4 import BeautifulSoup
 import hashlib
+
+def parse_feed_date(parsed_time: Any) -> Optional[datetime]:
+    """Convert feedparser's parsed time struct to datetime"""
+    if parsed_time is None:
+        return None
+    try:
+        # feedparser returns time.struct_time or similar tuple
+        t: struct_time = parsed_time
+        return datetime(t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, tzinfo=UTC)
+    except (TypeError, AttributeError):
+        return None
+
 
 class RSSCollector:
     def __init__(self):
@@ -68,9 +82,9 @@ class RSSCollector:
                 # Parse published date
                 published_date = None
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    published_date = datetime(*entry.published_parsed[:6], tzinfo=UTC)
+                    published_date = parse_feed_date(entry.published_parsed)
                 elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
-                    published_date = datetime(*entry.updated_parsed[:6], tzinfo=UTC)
+                    published_date = parse_feed_date(entry.updated_parsed)
                 
                 # Create feed item
                 feed_item = FeedItem(

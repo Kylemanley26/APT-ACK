@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} | MISP{% endblock %}
+
+{% block content %}
+<div x-data="mispPage()" x-init="init()">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold">MISP Feed</h1>
+        <a href="https://www.misp-project.org/" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+            <span>MISP Project</span>
+        </a>
+    </div>
+
+    <!-- MISP Connection Status -->
+    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold mb-2">MISP Instance Connection</h2>
+                <p class="text-gray-400 text-sm">Configure your MISP instance to pull threat intelligence events</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="flex items-center" x-show="!connected">
+                    <span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                    <span class="text-gray-400">Not Connected</span>
+                </span>
+                <span class="flex items-center" x-show="connected">
+                    <span class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    <span class="text-green-400">Connected</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Connection Form -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">MISP URL</label>
+                <input type="text" x-model="config.url" placeholder="https://misp.example.org"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">API Key</label>
+                <input type="password" x-model="config.apiKey" placeholder="Your MISP API key"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+            </div>
+            <div class="flex items-end">
+                <button @click="testConnection()" class="neon-button" :disabled="testing">
+                    <span x-show="!testing">Test Connection</span>
+                    <span x-show="testing">Testing...</span>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="connectionError" class="mt-4 p-3 bg-red-900 border border-red-700 rounded text-red-200 text-sm">
+            <span x-text="connectionError"></span>
+        </div>
+    </div>
+
+    <!-- MISP Events (placeholder for future implementation) -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700">
+        <div class="p-6 border-b border-gray-700">
+            <h2 class="text-xl font-bold">Recent MISP Events</h2>
+        </div>
+
+        <div class="p-6" x-show="!connected">
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-400 mb-2">No MISP Instance Connected</h3>
+                <p class="text-gray-500 text-sm">Configure your MISP connection above to start pulling threat intelligence events</p>
+            </div>
+        </div>
+
+        <div class="divide-y divide-gray-700" x-show="connected && events.length > 0">
+            <template x-for="event in events" :key="event.id">
+                <div class="p-6 hover:bg-gray-750 transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="px-2 py-1 text-xs font-semibold rounded"
+                                      :class="{
+                                          'bg-red-900 text-red-200': event.threat_level === 1,
+                                          'bg-orange-900 text-orange-200': event.threat_level === 2,
+                                          'bg-yellow-900 text-yellow-200': event.threat_level === 3,
+                                          'bg-blue-900 text-blue-200': event.threat_level === 4
+                                      }"
+                                      x-text="['', 'HIGH', 'MEDIUM', 'LOW', 'UNDEFINED'][event.threat_level]"></span>
+                                <span class="text-sm text-gray-400" x-text="event.orgc"></span>
+                                <span class="text-sm text-gray-500" x-text="event.date"></span>
+                            </div>
+
+                            <div class="text-lg font-semibold text-blue-400" x-text="event.info"></div>
+
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <template x-for="tag in event.tags" :key="tag">
+                                    <span class="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded" x-text="tag"></span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="ml-4 text-right">
+                            <div class="text-2xl font-bold text-purple-400" x-text="event.attribute_count"></div>
+                            <div class="text-xs text-gray-500">attributes</div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="p-6 text-center text-gray-500" x-show="connected && events.length === 0">
+            No events found
+        </div>
+    </div>
+
+    <!-- About MISP -->
+    <div class="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
+        <h3 class="text-lg font-bold mb-4">About MISP Integration</h3>
+        <p class="text-gray-400 mb-4">
+            MISP (Malware Information Sharing Platform) is an open-source threat intelligence platform for sharing,
+            storing, and correlating Indicators of Compromise (IOCs). Connect your MISP instance to aggregate
+            threat intelligence events alongside other APT-ACK feeds.
+        </p>
+        <div class="flex items-center space-x-6 text-sm">
+            <div>
+                <span class="text-gray-400">Threat Levels:</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2 py-1 text-xs bg-red-900 text-red-200 rounded">HIGH</span>
+                <span class="px-2 py-1 text-xs bg-orange-900 text-orange-200 rounded">MEDIUM</span>
+                <span class="px-2 py-1 text-xs bg-yellow-900 text-yellow-200 rounded">LOW</span>
+                <span class="px-2 py-1 text-xs bg-blue-900 text-blue-200 rounded">UNDEFINED</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function mispPage() {
+    return {
+        connected: false,
+        testing: false,
+        connectionError: null,
+        config: {
+            url: '',
+            apiKey: ''
+        },
+        events: [],
+
+        init() {
+            // Load saved config from localStorage
+            const saved = localStorage.getItem('misp_config');
+            if (saved) {
+                try {
+                    this.config = JSON.parse(saved);
+                } catch (e) {}
+            }
+        },
+
+        async testConnection() {
+            if (!this.config.url || !this.config.apiKey) {
+                this.connectionError = 'Please enter both MISP URL and API key';
+                return;
+            }
+
+            this.testing = true;
+            this.connectionError = null;
+
+            try {
+                // Save config
+                localStorage.setItem('misp_config', JSON.stringify(this.config));
+
+                // TODO: Implement actual MISP API connection
+                // For now, simulate a connection test
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Placeholder - would normally call backend API
+                this.connectionError = 'MISP integration coming soon. Backend API not yet implemented.';
+                this.connected = false;
+
+            } catch (error) {
+                this.connectionError = 'Connection failed: ' + error.message;
+                this.connected = false;
+            } finally {
+                this.testing = false;
+            }
+        },
+
+        async loadEvents() {
+            if (!this.connected) return;
+
+            try {
+                // TODO: Implement actual MISP event fetching
+                const response = await fetch('/api/misp/events');
+                this.events = await response.json();
+            } catch (error) {
+                console.error('Failed to load MISP events:', error);
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

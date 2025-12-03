@@ -37,7 +37,7 @@ class DataExporter:
                     'content': item.content,
                     'link': item.link,
                     'published_date': item.published_date.isoformat() if item.published_date else None,
-                    'collected_date': item.collected_date.isoformat(),
+                    'collected_date': item.collected_date.isoformat() if item.collected_date else None,
                     'severity': item.severity.value,
                     'relevance_score': item.relevance_score,
                     'tags': [{'name': t.name, 'category': t.category} for t in item.tags],
@@ -120,7 +120,7 @@ class DataExporter:
                         ioc.ioc_type.value,
                         ioc.value,
                         ioc.confidence,
-                        ioc.first_seen.isoformat(),
+                        ioc.first_seen.isoformat() if ioc.first_seen else '',
                         ioc.feed_item_id,
                         ioc.context[:100] if ioc.context else ''
                     ])
