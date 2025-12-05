@@ -168,18 +168,34 @@ class ThreatIntelOrchestrator:
             return False
         
         try:
-            from storage.models import FeedItem
+            from storage.models import FeedItem, Tag
             
             mapper = MitreAttackMapper()
             session = db.get_session()
             
-            # Get recent items to enrich (prioritize newest)
-            items = session.query(FeedItem).order_by(
-                FeedItem.published_date.desc().nullslast()
-            ).limit(limit).all()
+            # Find the 'claude-validated' tag
+            claude_tag = session.query(Tag).filter_by(name='claude-validated').first()
+            
+            if claude_tag:
+                # Get items NOT yet validated by Claude, prioritize newest
+                validated_ids = [item.id for item in claude_tag.feed_items]
+                items = session.query(FeedItem).filter(
+                    ~FeedItem.id.in_(validated_ids) if validated_ids else True
+                ).order_by(
+                    FeedItem.published_date.desc().nullslast()
+                ).limit(limit).all()
+            else:
+                # No tag exists yet, get newest items
+                items = session.query(FeedItem).order_by(
+                    FeedItem.published_date.desc().nullslast()
+                ).limit(limit).all()
             
             item_ids = [item.id for item in items]
             session.close()
+            
+            if not item_ids:
+                self.log("No items to validate - all caught up!")
+                return True
             
             enriched = 0
             validated = 0

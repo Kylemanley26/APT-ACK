@@ -18,7 +18,7 @@ class ClaudeValidator:
             raise ValueError("ANTHROPIC_API_KEY not set")
         
         self.client = anthropic.Anthropic(api_key=self.api_key)
-        self.model = "claude-sonnet-4-20250514"
+        self.model = "claude-haiku-4-5-20250929"
     
     def validate_techniques(
         self, 

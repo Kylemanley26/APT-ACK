@@ -643,6 +643,14 @@ class MitreAttackMapper:
             # Step 4: Apply to database
             final_count = self._apply_techniques(session, feed_item, final_techniques)
             
+            # Mark as Claude-validated
+            claude_tag = session.query(Tag).filter_by(name='claude-validated').first()
+            if not claude_tag:
+                claude_tag = Tag(name='claude-validated', category='validation', auto_generated=True)
+                session.add(claude_tag)
+            if claude_tag not in feed_item.tags:
+                feed_item.tags.append(claude_tag)
+            
             # Store summary if provided
             summary = claude_result.get('summary')
             # Could store this in a new field if desired
