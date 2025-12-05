@@ -366,8 +366,19 @@ class MitreAttackMapper:
             # Combine and deduplicate
             all_techniques = list(set(content_techniques + malware_techniques))
             
-            # Create technique tags
-            for technique_id in all_techniques:
+            # Validate techniques against STIX data - only create tags for valid techniques
+            valid_techniques = []
+            for tech_id in all_techniques:
+                tech_id_upper = tech_id.upper()
+                # Check if technique exists in STIX data
+                if self.stix_loader and tech_id_upper in self.stix_loader.techniques:
+                    valid_techniques.append(tech_id)
+                elif not self.stix_loader and tech_id_upper in self.technique_metadata:
+                    # Fallback to hardcoded if no STIX
+                    valid_techniques.append(tech_id)
+            
+            # Create technique tags only for validated techniques
+            for technique_id in valid_techniques:
                 metadata = self.get_technique_info(technique_id)
                 tag_name = f"mitre-{technique_id.lower()}"
                 
@@ -386,12 +397,12 @@ class MitreAttackMapper:
             # Store technique IDs in IOCs if applicable
             for ioc in feed_item.iocs:
                 if not ioc.mitre_techniques or 'CWE' not in ioc.mitre_techniques:
-                    technique_str = ', '.join(all_techniques[:5])  # Limit to 5
+                    technique_str = ', '.join(valid_techniques[:5])  # Limit to 5
                     if technique_str and not ioc.mitre_techniques:
                         ioc.mitre_techniques = technique_str
             
             session.commit()
-            return len(all_techniques)
+            return len(valid_techniques)
             
         except Exception as e:
             print(f"Error enriching feed item {feed_item_id} with MITRE: {e}")

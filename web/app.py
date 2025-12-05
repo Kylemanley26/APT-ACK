@@ -426,6 +426,9 @@ def get_techniques():
         for tag, count in technique_tags:
             tech_id = tag.replace('mitre-', '').upper()
             tech_info = mitre_mapper.get_technique_info(tech_id)
+            # Skip unknown/unrecognized techniques (fallback entries)
+            if tech_info['tactic'] == 'Unknown':
+                continue
             technique_matrix[tech_id] = {
                 'name': tech_info['name'],
                 'tactic': tech_info['tactic'],
@@ -732,6 +735,55 @@ def admin_retag():
         'total': total,
         'next_offset': offset + limit if offset + limit < total else None
     })
+
+@app.route('/admin/cleanup-techniques', methods=['POST'])
+def admin_cleanup_techniques():
+    """Remove invalid MITRE technique tags - requires admin key."""
+    admin_key = os.environ.get('ADMIN_KEY', '')
+    provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
+    
+    if not admin_key or provided_key != admin_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    dry_run = request.args.get('execute', 'false').lower() != 'true'
+    
+    # Get valid techniques from STIX
+    valid_techniques = set(mitre_mapper.stix_loader.techniques.keys()) if mitre_mapper.stix_loader else set(mitre_mapper.technique_metadata.keys())
+    
+    session = db.get_session()
+    try:
+        mitre_tags = session.query(Tag).filter(Tag.category == 'mitre_technique').all()
+        
+        invalid_tags = []
+        for tag in mitre_tags:
+            tech_id = tag.name.replace('mitre-', '').upper()
+            if tech_id not in valid_techniques:
+                invalid_tags.append({'id': tech_id, 'tag_name': tag.name, 'count': len(tag.feed_items)})
+        
+        if dry_run:
+            return jsonify({
+                'dry_run': True,
+                'valid_techniques': len(valid_techniques),
+                'total_tags': len(mitre_tags),
+                'invalid_count': len(invalid_tags),
+                'invalid_tags': sorted(invalid_tags, key=lambda x: x['count'], reverse=True)
+            })
+        
+        # Delete invalid tags
+        deleted = 0
+        for tag in mitre_tags:
+            tech_id = tag.name.replace('mitre-', '').upper()
+            if tech_id not in valid_techniques:
+                tag.feed_items = []
+                tag.iocs = []
+                session.delete(tag)
+                deleted += 1
+        
+        session.commit()
+        return jsonify({'deleted': deleted})
+    
+    finally:
+        session.close()
 
 @app.route('/misp')
 def misp_page():
