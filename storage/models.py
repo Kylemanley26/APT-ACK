@@ -61,6 +61,7 @@ class FeedItem(Base):
     # Metadata
     raw_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     processed: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Claude-generated summary
 
     # Relationships
     iocs = relationship('IOC', back_populates='feed_item', cascade='all, delete-orphan')

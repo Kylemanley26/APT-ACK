@@ -640,7 +640,8 @@ class MitreAttackMapper:
                 if t.get('confidence', 0) >= 0.7:  # Higher threshold for suggestions
                     final_techniques.append(t['id'])
             
-            # Step 4: Apply to database
+            # Step 4: Clear existing MITRE tags and apply only Claude-validated ones
+            feed_item.tags = [t for t in feed_item.tags if t.category != 'mitre_technique']
             final_count = self._apply_techniques(session, feed_item, final_techniques)
             
             # Mark as Claude-validated
@@ -651,9 +652,10 @@ class MitreAttackMapper:
             if claude_tag not in feed_item.tags:
                 feed_item.tags.append(claude_tag)
             
-            # Store summary if provided
+            # Store summary
             summary = claude_result.get('summary')
-            # Could store this in a new field if desired
+            if summary:
+                feed_item.summary = summary
             
             session.commit()
             

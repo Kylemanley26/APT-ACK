@@ -281,17 +281,21 @@ class ThreatIntelOrchestrator:
         self.run_ioc_extraction()
         self.run_tagging()
 
-        # MITRE ATT&CK mapping (after tagging)
-        if not skip_mitre:
+        # MITRE ATT&CK mapping (skip if Claude will handle it)
+        use_claude = not skip_claude and os.environ.get('ANTHROPIC_API_KEY')
+        
+        if not skip_mitre and not use_claude:
             self.run_mitre_mapping()
+        elif use_claude:
+            self.log("Skipping keyword MITRE mapping - Claude will handle it")
         else:
             self.log("Skipping MITRE ATT&CK mapping")
 
-        # Claude validation/enrichment (after MITRE mapping)
-        if not skip_claude:
+        # Claude validation/enrichment (does MITRE mapping + validation)
+        if use_claude:
             self.run_claude_enrichment(limit=claude_limit)
         else:
-            self.log("Skipping Claude enrichment")
+            self.log("Skipping Claude enrichment (no API key)")
 
         # NVD enrichment (optional, can be slow)
         if not skip_nvd:

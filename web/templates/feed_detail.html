@@ -47,11 +47,27 @@
                 </div>
             </div>
             
-            <!-- Content -->
-            <template x-if="feed.content">
+            <!-- Summary (Claude-generated) -->
+            <template x-if="feed.summary">
                 <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-                    <h2 class="text-xl font-bold mb-4">Content</h2>
-                    <p class="text-gray-300 whitespace-pre-wrap" x-text="feed.content"></p>
+                    <h2 class="text-xl font-bold mb-4">Summary</h2>
+                    <p class="text-gray-300" x-text="feed.summary"></p>
+                </div>
+            </template>
+            
+            <!-- Content (collapsible, shown if no summary or user expands) -->
+            <template x-if="feed.content">
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6" x-data="{ expanded: false }">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold">Raw Content</h2>
+                        <button @click="expanded = !expanded"
+                                class="text-sm text-gray-400 hover:text-white">
+                            <span x-text="expanded ? 'Hide' : 'Show'"></span>
+                        </button>
+                    </div>
+                    <div x-show="expanded" x-collapse>
+                        <p class="text-gray-400 text-sm whitespace-pre-wrap" x-text="feed.content"></p>
+                    </div>
                 </div>
             </template>
             

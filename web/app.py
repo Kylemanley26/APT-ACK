@@ -363,6 +363,7 @@ def get_feed_detail(feed_id):
             'source_url': item.source_url,
             'link': item.link,
             'content': item.content,
+            'summary': item.summary,  # Claude-generated summary
             'published_date': item.published_date.isoformat() if item.published_date else None,
             'collected_date': item.collected_date.isoformat() if item.collected_date else None,
             'severity': item.severity.value,
