@@ -736,6 +736,73 @@ def admin_retag():
         'next_offset': offset + limit if offset + limit < total else None
     })
 
+@app.route('/admin/enrich-claude', methods=['POST'])
+def admin_enrich_claude():
+    """Enrich feed items with Claude-validated MITRE techniques."""
+    admin_key = os.environ.get('ADMIN_KEY', '')
+    provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
+    
+    if not admin_key or provided_key != admin_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    feed_id = request.args.get('feed_id', type=int)
+    limit = request.args.get('limit', type=int, default=10)
+    offset = request.args.get('offset', type=int, default=0)
+    
+    # Single item mode
+    if feed_id:
+        result = mitre_mapper.enrich_feed_item_with_claude(feed_id)
+        return jsonify(result)
+    
+    # Batch mode
+    session = db.get_session()
+    try:
+        items = session.query(FeedItem).order_by(
+            FeedItem.published_date.desc().nullslast()
+        ).offset(offset).limit(limit).all()
+        item_ids = [(item.id, item.title[:60]) for item in items]
+        total = session.query(FeedItem).count()
+    finally:
+        session.close()
+    
+    results = []
+    for feed_id, title in item_ids:
+        result = mitre_mapper.enrich_feed_item_with_claude(feed_id)
+        result['feed_id'] = feed_id
+        result['title'] = title
+        results.append(result)
+    
+    return jsonify({
+        'processed': len(results),
+        'offset': offset,
+        'limit': limit,
+        'total': total,
+        'next_offset': offset + limit if offset + limit < total else None,
+        'results': results
+    })
+
+@app.route('/admin/debug-techniques')
+def admin_debug_techniques():
+    """Debug technique resolution"""
+    admin_key = os.environ.get('ADMIN_KEY', '')
+    provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
+    
+    if not admin_key or provided_key != admin_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Test specific IDs from screenshot
+    test_ids = ['T1210', 'T1211', 'T1204.001', 'T1530', 'T1562.010', 'T1213']
+    results = {}
+    for tid in test_ids:
+        info = mitre_mapper.get_technique_info(tid)
+        results[tid] = info
+    
+    return jsonify({
+        'stix_loaded': mitre_mapper.stix_loader is not None,
+        'stix_technique_count': len(mitre_mapper.stix_loader.techniques) if mitre_mapper.stix_loader else 0,
+        'test_results': results
+    })
+
 @app.route('/admin/cleanup-techniques', methods=['POST'])
 def admin_cleanup_techniques():
     """Remove invalid MITRE technique tags - requires admin key."""

@@ -19,6 +19,14 @@ from enrichment.ioc_extractor import IOCExtractor
 from enrichment.tagging_engine import ThreatTagger
 from enrichment.mitre_attack_mapper import MitreAttackMapper
 
+# Optional Claude validator
+try:
+    from enrichment.claude_validator import get_claude_validator
+    CLAUDE_AVAILABLE = True
+except ImportError:
+    CLAUDE_AVAILABLE = False
+    get_claude_validator = None
+
 class ThreatIntelOrchestrator:
     def __init__(self):
         self.start_time = datetime.now(UTC)
@@ -145,6 +153,60 @@ class ThreatIntelOrchestrator:
             self.log(f"ERROR in MITRE mapping: {e}")
             return False
 
+    def run_claude_enrichment(self, limit=50):
+        """Validate and enhance MITRE mappings using Claude API"""
+        self.log("Starting Claude MITRE validation...")
+        
+        # Check if Claude is available
+        if not CLAUDE_AVAILABLE:
+            self.log("Claude validator not available (import failed)")
+            return False
+        
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if not api_key:
+            self.log("No ANTHROPIC_API_KEY found, skipping Claude enrichment")
+            return False
+        
+        try:
+            from storage.models import FeedItem
+            
+            mapper = MitreAttackMapper()
+            session = db.get_session()
+            
+            # Get recent items to enrich (prioritize newest)
+            items = session.query(FeedItem).order_by(
+                FeedItem.published_date.desc().nullslast()
+            ).limit(limit).all()
+            
+            item_ids = [item.id for item in items]
+            session.close()
+            
+            enriched = 0
+            validated = 0
+            suggested = 0
+            
+            for feed_id in item_ids:
+                result = mapper.enrich_feed_item_with_claude(feed_id)
+                
+                if result.get('error'):
+                    self.log(f"  Item {feed_id}: {result['error']}")
+                    continue
+                
+                enriched += 1
+                validated += result.get('validated', 0)
+                suggested += result.get('suggested', 0)
+            
+            self.stats['claude_enriched'] = enriched
+            self.stats['claude_validated'] = validated
+            self.stats['claude_suggested'] = suggested
+            
+            self.log(f"Claude enrichment complete: {enriched} items processed, {validated} validated, {suggested} new techniques suggested")
+            return True
+            
+        except Exception as e:
+            self.log(f"ERROR in Claude enrichment: {e}")
+            return False
+
     def run_nvd_enrichment(self, limit=None):
         """Enrich CVEs with NVD data"""
         self.log("Starting NVD enrichment...")
@@ -176,10 +238,17 @@ class ThreatIntelOrchestrator:
         print(f"  IOCs Extracted: {self.stats['iocs_extracted']}")
         print(f"  Items Tagged: {self.stats['items_tagged']}")
         print(f"  MITRE Techniques Mapped: {self.stats['mitre_mapped']}")
+        
+        # Claude stats (if ran)
+        if 'claude_enriched' in self.stats:
+            print(f"  Claude Validated: {self.stats.get('claude_enriched', 0)} items")
+            print(f"    - Techniques Validated: {self.stats.get('claude_validated', 0)}")
+            print(f"    - New Techniques Suggested: {self.stats.get('claude_suggested', 0)}")
+        
         print(f"  CVEs Enriched: {self.stats['cves_enriched']}")
         print("\n" + "="*80 + "\n")
     
-    def run_full_pipeline(self, skip_nvd=False, skip_mitre=False, nvd_limit=None, use_levelblue=True):
+    def run_full_pipeline(self, skip_nvd=False, skip_mitre=False, skip_claude=False, nvd_limit=None, claude_limit=50, use_levelblue=True):
         """Run complete collection and enrichment pipeline"""
         self.log("="*80)
         self.log("APT-ACK THREAT INTELLIGENCE COLLECTION STARTED")
@@ -202,6 +271,12 @@ class ThreatIntelOrchestrator:
         else:
             self.log("Skipping MITRE ATT&CK mapping")
 
+        # Claude validation/enrichment (after MITRE mapping)
+        if not skip_claude:
+            self.run_claude_enrichment(limit=claude_limit)
+        else:
+            self.log("Skipping Claude enrichment")
+
         # NVD enrichment (optional, can be slow)
         if not skip_nvd:
             self.run_nvd_enrichment(limit=nvd_limit)
@@ -222,8 +297,12 @@ def main():
                        help='Skip NVD enrichment (faster)')
     parser.add_argument('--skip-mitre', action='store_true',
                        help='Skip MITRE ATT&CK mapping')
+    parser.add_argument('--skip-claude', action='store_true',
+                       help='Skip Claude API validation')
     parser.add_argument('--nvd-limit', type=int, default=None,
                        help='Limit number of CVEs to enrich (for testing)')
+    parser.add_argument('--claude-limit', type=int, default=50,
+                       help='Number of items to validate with Claude (default: 50)')
 
     args = parser.parse_args()
 
@@ -231,7 +310,9 @@ def main():
     orchestrator.run_full_pipeline(
         skip_nvd=args.skip_nvd,
         skip_mitre=args.skip_mitre,
-        nvd_limit=args.nvd_limit
+        skip_claude=args.skip_claude,
+        nvd_limit=args.nvd_limit,
+        claude_limit=args.claude_limit
     )
 
 if __name__ == "__main__":

@@ -23,6 +23,17 @@ try:
 except ImportError:
     print("Warning: MITRE STIX loader not available, using hardcoded patterns")
 
+# Try to import Claude validator
+CLAUDE_AVAILABLE = False
+get_claude_validator = None
+
+try:
+    from enrichment.claude_validator import get_claude_validator as _get_claude_validator
+    CLAUDE_AVAILABLE = True
+    get_claude_validator = _get_claude_validator
+except ImportError:
+    pass
+
 if TYPE_CHECKING:
     from enrichment.mitre_stix_loader import MitreStixLoader
 
@@ -528,3 +539,164 @@ class MitreAttackMapper:
                 })
         
         return by_tactic
+    
+    def enrich_feed_item_with_claude(self, feed_item_id: int) -> dict:
+        """
+        Enhanced enrichment using Claude API for validation and discovery.
+        
+        Returns:
+            {
+                'keyword_detected': 3,
+                'validated': 2,
+                'rejected': 1,
+                'suggested': 2,
+                'final_count': 4,
+                'summary': '...',
+                'error': None
+            }
+        """
+        if not CLAUDE_AVAILABLE or get_claude_validator is None:
+            # Fall back to keyword-only
+            count = self.enrich_feed_item(feed_item_id)
+            return {
+                'keyword_detected': count,
+                'validated': count,
+                'rejected': 0,
+                'suggested': 0,
+                'final_count': count,
+                'summary': None,
+                'error': 'Claude validator not available'
+            }
+        
+        validator = get_claude_validator()
+        if not validator:
+            count = self.enrich_feed_item(feed_item_id)
+            return {
+                'keyword_detected': count,
+                'validated': count,
+                'rejected': 0,
+                'suggested': 0,
+                'final_count': count,
+                'summary': None,
+                'error': 'ANTHROPIC_API_KEY not set'
+            }
+        
+        session = db.get_session()
+        
+        try:
+            feed_item = session.query(FeedItem).filter_by(id=feed_item_id).first()
+            if not feed_item:
+                return {'error': 'Feed item not found'}
+            
+            text = f"{feed_item.title} {feed_item.content}"
+            
+            # Step 1: Keyword detection (fast)
+            content_techniques = self.detect_techniques(text)
+            malware_tags = [t.name for t in feed_item.tags if t.category == 'malware']
+            malware_techniques = self.map_malware_to_techniques(malware_tags)
+            keyword_techniques = list(set(content_techniques + malware_techniques))
+            
+            # Build technique info for Claude
+            detected_for_claude = []
+            for tech_id in keyword_techniques:
+                info = self.get_technique_info(tech_id)
+                if info['tactic'] != 'Unknown':  # Only send valid techniques
+                    detected_for_claude.append({
+                        'id': tech_id.upper(),
+                        'name': info['name'],
+                        'tactic': info['tactic']
+                    })
+            
+            # Step 2: Claude validation
+            claude_result = validator.validate_techniques(
+                title=feed_item.title,
+                content=feed_item.content or '',
+                detected_techniques=detected_for_claude
+            )
+            
+            if claude_result.get('error'):
+                # Fall back to keyword-only on error
+                count = self._apply_techniques(session, feed_item, keyword_techniques)
+                return {
+                    'keyword_detected': len(keyword_techniques),
+                    'validated': count,
+                    'rejected': 0,
+                    'suggested': 0,
+                    'final_count': count,
+                    'summary': None,
+                    'error': claude_result['error']
+                }
+            
+            # Step 3: Build final technique list
+            final_techniques = []
+            
+            # Add validated techniques
+            for t in claude_result.get('validated', []):
+                if t.get('confidence', 0) >= 0.5:
+                    final_techniques.append(t['id'])
+            
+            # Add suggested techniques (Claude found ones we missed)
+            for t in claude_result.get('suggested', []):
+                if t.get('confidence', 0) >= 0.7:  # Higher threshold for suggestions
+                    final_techniques.append(t['id'])
+            
+            # Step 4: Apply to database
+            final_count = self._apply_techniques(session, feed_item, final_techniques)
+            
+            # Store summary if provided
+            summary = claude_result.get('summary')
+            # Could store this in a new field if desired
+            
+            session.commit()
+            
+            return {
+                'keyword_detected': len(keyword_techniques),
+                'validated': len(claude_result.get('validated', [])),
+                'rejected': len(claude_result.get('rejected', [])),
+                'suggested': len(claude_result.get('suggested', [])),
+                'final_count': final_count,
+                'summary': summary,
+                'error': None
+            }
+            
+        except Exception as e:
+            session.rollback()
+            return {'error': str(e)}
+        finally:
+            session.close()
+    
+    def _apply_techniques(self, session, feed_item, technique_ids: list) -> int:
+        """Apply technique tags to feed item. Returns count of valid techniques added."""
+        valid_count = 0
+        
+        for technique_id in technique_ids:
+            tech_id_upper = technique_id.upper()
+            
+            # Validate against STIX
+            if self.stix_loader and tech_id_upper not in self.stix_loader.techniques:
+                # Check if it's a valid sub-technique
+                if '.' in tech_id_upper:
+                    parent_id = tech_id_upper.split('.')[0]
+                    if parent_id not in self.stix_loader.techniques:
+                        continue
+                else:
+                    continue
+            elif not self.stix_loader and tech_id_upper not in self.technique_metadata:
+                continue
+            
+            tag_name = f"mitre-{technique_id.lower()}"
+            
+            tag = session.query(Tag).filter_by(name=tag_name).first()
+            if not tag:
+                tag = Tag(
+                    name=tag_name,
+                    category='mitre_technique',
+                    auto_generated=True
+                )
+                session.add(tag)
+            
+            if tag not in feed_item.tags:
+                feed_item.tags.append(tag)
+                valid_count += 1
+        
+        return valid_count

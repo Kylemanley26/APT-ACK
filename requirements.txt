@@ -9,3 +9,4 @@ python-dotenv
 psycopg2-binary
 gunicorn
 APScheduler==3.10.4
+anthropic

@@ -30,7 +30,14 @@ class CollectionScheduler:
             
             # Run collection (skip NVD by default to avoid rate limits)
             skip_nvd = os.environ.get('SKIP_NVD', 'true').lower() == 'true'
-            self.orchestrator.run_full_pipeline(skip_nvd=skip_nvd)
+            skip_claude = os.environ.get('SKIP_CLAUDE', 'false').lower() == 'true'
+            claude_limit = int(os.environ.get('CLAUDE_LIMIT', '50'))
+            
+            self.orchestrator.run_full_pipeline(
+                skip_nvd=skip_nvd,
+                skip_claude=skip_claude,
+                claude_limit=claude_limit
+            )
             
             logger.info("Scheduled collection job completed successfully")
             
