@@ -98,7 +98,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=2000,
+                max_tokens=1000,  # Reduced from 2000 for rate limits
                 messages=[{"role": "user", "content": prompt}]
             )
             
@@ -116,13 +116,30 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             return result
             
         except json.JSONDecodeError as e:
-            return {
-                'validated': detected_techniques,
-                'rejected': [],
-                'suggested': [],
-                'summary': None,
-                'error': f'JSON parse error: {e}'
-            }
+            # Retry once on JSON error
+            try:
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=1000,
+                    messages=[{"role": "user", "content": prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON, no markdown."}]
+                )
+                response_text = response.content[0].text.strip()
+                if response_text.startswith("```"):
+                    response_text = response_text.split("```")[1]
+                    if response_text.startswith("json"):
+                        response_text = response_text[4:]
+                    response_text = response_text.strip()
+                result = json.loads(response_text)
+                result['error'] = None
+                return result
+            except:
+                return {
+                    'validated': detected_techniques,
+                    'rejected': [],
+                    'suggested': [],
+                    'summary': None,
+                    'error': f'JSON parse error: {e}'
+                }
         except anthropic.APIError as e:
             return {
                 'validated': detected_techniques,
@@ -188,7 +205,7 @@ Respond ONLY with valid JSON:
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=2000,
+                max_tokens=1000,  # Reduced for rate limits
                 messages=[{"role": "user", "content": prompt}]
             )
             

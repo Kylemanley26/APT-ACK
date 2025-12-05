@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request
 from datetime import datetime, timedelta, UTC
 import sys
 import os
+import time
 import atexit
 
 def get_ioc_url_type(ioc_type):
@@ -772,6 +773,7 @@ def admin_enrich_claude():
         result['feed_id'] = feed_id
         result['title'] = title
         results.append(result)
+        time.sleep(1)  # Rate limit: 1 second between items
     
     return jsonify({
         'processed': len(results),
