@@ -853,6 +853,42 @@ def admin_cleanup_techniques():
     finally:
         session.close()
 
+@app.route('/admin/migrate', methods=['POST'])
+def admin_migrate():
+    """Run database migrations - requires admin key."""
+    admin_key = os.environ.get('ADMIN_KEY', '')
+    provided_key = request.headers.get('X-Admin-Key') or request.args.get('key')
+    
+    if not admin_key or provided_key != admin_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    from sqlalchemy import text
+    session = db.get_session()
+    results = []
+    
+    try:
+        # Migration: Add summary column
+        result = session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'feed_items' AND column_name = 'summary'
+        """))
+        
+        if not result.fetchone():
+            session.execute(text("ALTER TABLE feed_items ADD COLUMN summary TEXT"))
+            session.commit()
+            results.append('Added summary column to feed_items')
+        else:
+            results.append('summary column already exists')
+        
+        return jsonify({'success': True, 'migrations': results})
+        
+    except Exception as e:
+        session.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        session.close()
+
 @app.route('/misp')
 def misp_page():
     """MISP feed integration page"""
