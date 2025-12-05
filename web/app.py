@@ -747,9 +747,6 @@ def admin_cleanup_techniques():
     
     dry_run = request.args.get('execute', 'false').lower() != 'true'
     
-    # Get valid techniques from STIX
-    valid_techniques = set(mitre_mapper.stix_loader.techniques.keys()) if mitre_mapper.stix_loader else set(mitre_mapper.technique_metadata.keys())
-    
     session = db.get_session()
     try:
         mitre_tags = session.query(Tag).filter(Tag.category == 'mitre_technique').all()
@@ -757,13 +754,15 @@ def admin_cleanup_techniques():
         invalid_tags = []
         for tag in mitre_tags:
             tech_id = tag.name.replace('mitre-', '').upper()
-            if tech_id not in valid_techniques:
+            tech_info = mitre_mapper.get_technique_info(tech_id)
+            # Tag is invalid if tactic resolves to 'Unknown'
+            if tech_info['tactic'] == 'Unknown':
                 invalid_tags.append({'id': tech_id, 'tag_name': tag.name, 'count': len(tag.feed_items)})
         
         if dry_run:
             return jsonify({
                 'dry_run': True,
-                'valid_techniques': len(valid_techniques),
+                'stix_loaded': mitre_mapper.stix_loader is not None,
                 'total_tags': len(mitre_tags),
                 'invalid_count': len(invalid_tags),
                 'invalid_tags': sorted(invalid_tags, key=lambda x: x['count'], reverse=True)
@@ -773,7 +772,8 @@ def admin_cleanup_techniques():
         deleted = 0
         for tag in mitre_tags:
             tech_id = tag.name.replace('mitre-', '').upper()
-            if tech_id not in valid_techniques:
+            tech_info = mitre_mapper.get_technique_info(tech_id)
+            if tech_info['tactic'] == 'Unknown':
                 tag.feed_items = []
                 tag.iocs = []
                 session.delete(tag)
