@@ -773,7 +773,7 @@ def admin_enrich_claude():
         result['feed_id'] = feed_id
         result['title'] = title
         results.append(result)
-        time.sleep(1)  # Rate limit: 1 second between items
+        time.sleep(2)  # Rate limit: 2 seconds between items
     
     return jsonify({
         'processed': len(results),

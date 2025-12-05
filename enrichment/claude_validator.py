@@ -18,7 +18,7 @@ class ClaudeValidator:
             raise ValueError("ANTHROPIC_API_KEY not set")
         
         self.client = anthropic.Anthropic(api_key=self.api_key)
-        self.model = "claude-haiku-4-5-20251001"
+        self.model = "claude-sonnet-4-20250514"  # More reliable JSON output than Haiku
     
     def validate_techniques(
         self, 
@@ -98,7 +98,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=1000,  # Reduced from 2000 for rate limits
+                max_tokens=1500,  # Sonnet handles longer output reliably
                 messages=[{"role": "user", "content": prompt}]
             )
             
@@ -120,7 +120,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
             try:
                 response = self.client.messages.create(
                     model=self.model,
-                    max_tokens=1000,
+                    max_tokens=1500,
                     messages=[{"role": "user", "content": prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON, no markdown."}]
                 )
                 response_text = response.content[0].text.strip()
@@ -205,7 +205,7 @@ Respond ONLY with valid JSON:
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=1000,  # Reduced for rate limits
+                max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}]
             )
             
